@@ -12,10 +12,13 @@ data class Campaign(
     val summary: String,
     val description: String,
     val organizer: String,
+    val location: String,
+    val categoryId: CategoryId,
     val imageUrl: String,
     val goal: Money,
     val raised: Money,
     val donorCount: Int,
+    val featured: Boolean,
     val createdAt: Instant,
     val endsAt: Instant,
 ) {

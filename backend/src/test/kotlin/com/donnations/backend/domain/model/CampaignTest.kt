@@ -16,7 +16,7 @@ class CampaignTest {
 
     @Test
     fun `rejects zero goal`() {
-        assertFailsWith<IllegalArgumentException> { campaign(goal = Money(0, Currency.USD)) }
+        assertFailsWith<IllegalArgumentException> { campaign(goal = Money(0, Currency.EUR)) }
     }
 
     @Test
@@ -33,11 +33,11 @@ class CampaignTest {
 
     @Test
     fun `money exposes major units using currency fraction digits`() {
-        assertEquals(BigDecimal("32750.05"), Money(3_275_005, Currency.USD).amount)
+        assertEquals(BigDecimal("32750.05"), Money(3_275_005, Currency.EUR).amount)
     }
 
     @Test
     fun `rejects negative money`() {
-        assertFailsWith<IllegalArgumentException> { Money(-1, Currency.USD) }
+        assertFailsWith<IllegalArgumentException> { Money(-1, Currency.EUR) }
     }
 }
