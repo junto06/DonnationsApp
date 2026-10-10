@@ -23,3 +23,9 @@ rootProject.name = "Donnations"
 
 // App root
 include(":app")
+
+// Core
+include(":core:base")
+include(":core:designsystem")
+include(":core:network:base")
+include(":core:network:impl")
