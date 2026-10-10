@@ -1,4 +1,4 @@
-package com.donnations.backend.config
+package com.donnations.backend.configurations
 
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info

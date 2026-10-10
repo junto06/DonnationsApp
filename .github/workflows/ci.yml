@@ -3,16 +3,41 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: ['backend/**']
   pull_request:
-    paths-ignore: ['backend/**']
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Job-level filtering: a skipped job still reports success, so both can be required checks.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+      backend: ${{ steps.filter.outputs.backend }}
+      workflow: ${{ steps.filter.outputs.workflow }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            workflow:
+              - '.github/workflows/ci.yml'
+            backend:
+              - 'backend/**'
+            android:
+              - '**'
+              - '!backend/**'
+          # A file must match every pattern in a filter, so android means "anything outside backend/".
+          predicate-quantifier: every
+
+  android:
+    needs: changes
+    if: needs.changes.outputs.android == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -36,3 +61,30 @@ jobs:
 
       - name: Build and unit test
         run: ./gradlew assembleDebug test
+
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflow == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read JDK version
+        id: jdk
+        run: echo "version=$(sed -nE 's/^jdk = "([0-9]+)"/\1/p' gradle/libs.versions.toml)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ steps.jdk.outputs.version }}
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          build-root-directory: backend
+
+      - name: Build and test
+        run: ./gradlew build
