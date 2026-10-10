@@ -33,4 +33,4 @@ jobs:
         run: echo "org.gradle.java.home=$JAVA_HOME" >> ~/.gradle/gradle.properties
 
       - name: Build and unit test
-        run: ./gradlew assembleDebug testDebugUnitTest
+        run: ./gradlew assembleDebug test

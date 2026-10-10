@@ -11,9 +11,22 @@ android {
         applicationId = "com.donnations"
         versionCode = 1
         versionName = "1.0.0"
+        // PROD unless -Pstaging
+        val environment = if (providers.gradleProperty("staging").isPresent) "STAGING" else "PROD"
+        buildConfigField("String", "ENVIRONMENT", "\"$environment\"")
     }
+
+    buildFeatures.buildConfig = true
 }
 
 dependencies {
+    implementation(projects.core.base)
+    implementation(projects.core.designsystem)
+
+    // Only the app sees network:impl; features compile against network:base
+    implementation(projects.core.network.impl)
+    implementation(libs.coil)
+    implementation(libs.coil.network.okhttp)
+
     implementation(libs.androidx.activity.compose)
 }

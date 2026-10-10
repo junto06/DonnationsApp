@@ -12,8 +12,7 @@ class AndroidLibraryPlugin : ConventionPlugin() {
 
         extensions.configure<LibraryExtension> {
             configureKotlinAndroid(this)
-            // Off by default for faster builds
-            // opt in per module with androidResources.enable = true
+            // Off by default; opt in per module
             androidResources.enable = false
             val consumerRules = file("consumer-rules.pro")
             if (consumerRules.exists()) {

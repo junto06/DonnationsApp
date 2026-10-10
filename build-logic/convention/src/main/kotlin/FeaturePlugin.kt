@@ -16,7 +16,7 @@ class FeaturePlugin : ConventionPlugin() {
             "implementation"(libs.findLibrary("androidx-lifecycle-runtime-compose").get())
             "implementation"(libs.findLibrary("androidx-lifecycle-viewmodel-compose").get())
             "implementation"(libs.findLibrary("androidx-navigation-compose").get())
-            "implementation"(libs.findLibrary("androidx-hilt-navigation-compose").get())
+            "implementation"(libs.findLibrary("androidx-hilt-lifecycle-viewmodel-compose").get())
             "implementation"(libs.findLibrary("kotlinx-coroutines-android").get())
             
             "testImplementation"(libs.findLibrary("junit").get())
