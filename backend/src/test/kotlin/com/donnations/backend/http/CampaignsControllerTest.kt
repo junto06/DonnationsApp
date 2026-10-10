@@ -15,11 +15,11 @@ class CampaignsControllerTest(@Autowired private val mockMvc: MockMvc) {
     fun `lists seeded campaigns newest first`() {
         mockMvc.get("/api/v1/campaigns").andExpect {
             status { isOk() }
-            jsonPath("$.length()") { value(3) }
-            jsonPath("$[0].title") { value("Emergency Flood Relief") }
-            jsonPath("$[0].currency") { value("USD") }
-            jsonPath("$[0].goal") { value("100000.00") }
-            jsonPath("$[0].endsAt") { value("2026-11-15T23:59:59Z") }
+            jsonPath("$.length()") { value(6) }
+            jsonPath("$[0].title") { value("Winter Relief for Families") }
+            jsonPath("$[0].currency") { value("EUR") }
+            jsonPath("$[0].goal") { value("10000.00") }
+            jsonPath("$[0].endsAt") { value("2027-01-31T23:59:59Z") }
             jsonPath("$[0].description") { doesNotExist() }
         }
     }
