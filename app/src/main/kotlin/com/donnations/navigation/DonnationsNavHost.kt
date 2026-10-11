@@ -7,6 +7,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.donnations.feature.campaign.navigation.campaignDetailScreen
 import com.donnations.feature.campaign.navigation.navigateToCampaignDetail
+import com.donnations.feature.donation.navigation.donationScreen
+import com.donnations.feature.donation.navigation.navigateToDonation
 import com.donnations.feature.home.navigation.HomeDestination
 import com.donnations.feature.home.navigation.homeScreen
 
@@ -16,8 +18,15 @@ fun DonnationsNavHost(
     navController: NavHostController = rememberNavController(),
 ) {
     NavHost(navController = navController, startDestination = HomeDestination, modifier = modifier) {
-        homeScreen(onCampaignClick = navController::navigateToCampaignDetail)
+        homeScreen(
+            onCampaignClick = navController::navigateToCampaignDetail,
+            onDonateClick = navController::navigateToDonation,
+        )
         // navigateUp never pops the start destination, so a double-tapped Back can't leave a blank host.
-        campaignDetailScreen(onBack = { navController.navigateUp() })
+        campaignDetailScreen(
+            onBack = { navController.navigateUp() },
+            onDonate = navController::navigateToDonation
+        )
+        donationScreen(onBack = { navController.navigateUp() })
     }
 }

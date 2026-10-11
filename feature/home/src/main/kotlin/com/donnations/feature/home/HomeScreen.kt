@@ -37,6 +37,7 @@ import com.donnations.feature.home.model.HomeUiModel
 @Composable
 fun HomeRoute(
     onCampaignClick: (String) -> Unit = {},
+    onDonateClick: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -45,6 +46,7 @@ fun HomeRoute(
         onRetry = viewModel::retry,
         onCategorySelect = viewModel::selectCategory,
         onCampaignClick = onCampaignClick,
+        onDonateClick = onDonateClick,
     )
 }
 
@@ -54,6 +56,7 @@ fun HomeScreen(
     onRetry: () -> Unit,
     onCategorySelect: (String) -> Unit,
     onCampaignClick: (String) -> Unit,
+    onDonateClick: (String) -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -70,7 +73,7 @@ fun HomeScreen(
         when (uiState) {
             HomeUiState.Loading -> LoadingWheel(contentModifier)
             is HomeUiState.Error -> ErrorContent(uiState.message, onRetry, contentModifier)
-            is HomeUiState.Success -> HomeContent(uiState.home, onCategorySelect, onCampaignClick, contentModifier)
+            is HomeUiState.Success -> HomeContent(uiState.home, onCategorySelect, onCampaignClick, onDonateClick, contentModifier)
         }
     }
 }
@@ -80,6 +83,7 @@ private fun HomeContent(
     home: HomeUiModel,
     onCategorySelect: (String) -> Unit,
     onCampaignClick: (String) -> Unit,
+    onDonateClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -100,7 +104,7 @@ private fun HomeContent(
                 key(home.selectedCategoryId) {
                     FeaturedCarousel(
                         campaigns = home.featured,
-                        onDonateClick = onCampaignClick,
+                        onDonateClick = onDonateClick,
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }

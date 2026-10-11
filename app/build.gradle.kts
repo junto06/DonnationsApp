@@ -24,9 +24,11 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.feature.home)
     implementation(projects.feature.campaign)
+    implementation(projects.feature.donation)
     // data is only here so Hilt can assemble its bindings
     implementation(projects.data.home)
     implementation(projects.data.campaign)
+    implementation(projects.data.donation)
 
     // Only the app sees network:impl; features compile against network:base
     implementation(projects.core.network.impl)

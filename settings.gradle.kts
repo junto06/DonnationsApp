@@ -34,11 +34,14 @@ include(":core:network:impl")
 // Domain
 include(":domain:home")
 include(":domain:campaign")
+include(":domain:donation")
 
 // Data
 include(":data:home")
 include(":data:campaign")
+include(":data:donation")
 
 // Feature (presentation)
 include(":feature:home")
 include(":feature:campaign")
+include(":feature:donation")

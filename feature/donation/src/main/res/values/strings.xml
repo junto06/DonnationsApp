@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="donation_title">Donate</string>
+    <string name="donation_back">Back</string>
+    <string name="donation_choose_amount">Choose an amount</string>
+    <string name="donation_amount">Amount</string>
+    <string name="donation_amount_invalid">Enter a valid amount</string>
+    <string name="donation_donate">Donate</string>
+    <string name="donation_coming_soon">Online donations are coming soon.</string>
+    <string name="donation_error_load">Couldn\'t load donation options. Please try again.</string>
+    <string name="donation_error_campaign_ended">This campaign has ended and is no longer accepting donations.</string>
+    <string name="donation_error_campaign_not_found">We couldn\'t find this campaign.</string>
+    <string name="donation_retry">Retry</string>
+</resources>

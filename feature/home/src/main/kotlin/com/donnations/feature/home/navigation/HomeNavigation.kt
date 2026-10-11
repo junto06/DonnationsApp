@@ -8,8 +8,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object HomeDestination
 
-fun NavGraphBuilder.homeScreen(onCampaignClick: (String) -> Unit) {
+fun NavGraphBuilder.homeScreen(
+    onCampaignClick: (String) -> Unit,
+    onDonateClick: (String) -> Unit
+) {
     composable<HomeDestination> {
-        HomeRoute(onCampaignClick = onCampaignClick)
+        HomeRoute(
+            onCampaignClick = onCampaignClick,
+            onDonateClick = onDonateClick
+        )
     }
 }
