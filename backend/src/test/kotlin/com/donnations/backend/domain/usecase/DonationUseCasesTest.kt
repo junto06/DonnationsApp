@@ -75,6 +75,18 @@ class DonationUseCasesTest {
     }
 
     @Test
+    fun `donating to an ended campaign fails and leaves it untouched`() {
+        val ended = MakeDonationUseCase(
+            campaigns,
+            DonationsRepositoryImpl(InMemoryDonationsStore()),
+            Clock.fixed(campaign.endsAt, ZoneOffset.UTC),
+        )
+
+        assertFailsWith<CampaignEndedException> { ended(campaign.id, BigDecimal.TEN) }
+        assertEquals(campaign, campaigns.getById(campaign.id))
+    }
+
+    @Test
     fun `donating to unknown campaign fails`() {
         assertFailsWith<CampaignNotFoundException> { makeDonation(CampaignId(UUID.randomUUID()), BigDecimal.TEN) }
     }

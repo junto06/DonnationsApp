@@ -32,8 +32,10 @@ class GlobalExceptionHandler {
         error(HttpStatus.CONFLICT, e.message.orEmpty(), e.errorCode)
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleUnreadableBody(e: HttpMessageNotReadableException): ResponseEntity<ErrorResponseDto> =
-        error(HttpStatus.BAD_REQUEST, "Malformed request body", ErrorCode.INVALID_REQUEST)
+    fun handleUnreadableBody(e: HttpMessageNotReadableException): ResponseEntity<ErrorResponseDto> {
+        log.debug("Unreadable request body", e)
+        return error(HttpStatus.BAD_REQUEST, "Malformed request body", ErrorCode.INVALID_REQUEST)
+    }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleTypeMismatch(e: MethodArgumentTypeMismatchException): ResponseEntity<ErrorResponseDto> =
