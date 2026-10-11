@@ -1,5 +1,6 @@
 package com.donnations.feature.home
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.donnations.domain.home.model.Home
 import com.donnations.domain.home.repository.HomeRepository
@@ -21,7 +22,7 @@ import java.util.Locale
 class HomeViewModelTest {
 
     private val repository = FakeHomeRepository()
-    private val viewModel by lazy { HomeViewModel(repository, HomeUiMapper({ Locale.US }, testStrings)) }
+    private val viewModel by lazy { HomeViewModel(repository, HomeUiMapper({ Locale.US }, testStrings), SavedStateHandle()) }
 
     @Before
     fun setUp() {
@@ -58,10 +59,26 @@ class HomeViewModelTest {
         }
     }
 
+    @Test
+    fun `selecting a category filters locally without reloading`() = runTest {
+        viewModel.uiState.test {
+            assertTrue(awaitItem() is HomeUiState.Success)
+
+            viewModel.selectCategory("education")
+
+            val state = awaitItem() as HomeUiState.Success
+            assertEquals("education", state.home.selectedCategoryId)
+            assertEquals(listOf("c2"), state.home.campaigns.map { it.id })
+            assertEquals(1, repository.requests)
+        }
+    }
+
     private class FakeHomeRepository : HomeRepository {
         var failure: Throwable? = null
+        var requests = 0
 
         override fun getHome(): Flow<Home> = flow {
+            requests++
             failure?.let { throw it }
             emit(home())
         }

@@ -7,4 +7,5 @@
     <string name="home_donate_now">Donate Now</string>
     <string name="home_category_all">All</string>
     <string name="home_goal_of">of %1$s</string>
+    <string name="home_empty_category">No campaigns in this category yet.</string>
 </resources>

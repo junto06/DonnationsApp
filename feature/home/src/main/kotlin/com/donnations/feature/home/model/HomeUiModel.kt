@@ -2,6 +2,7 @@ package com.donnations.feature.home.model
 
 data class HomeUiModel(
     val categories: List<CategoryUiModel>,
+    val selectedCategoryId: String,
     val featured: List<CampaignUiModel>,
     val campaigns: List<CampaignUiModel>,
 )

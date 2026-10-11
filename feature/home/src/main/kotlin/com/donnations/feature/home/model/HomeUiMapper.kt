@@ -17,15 +17,19 @@ class HomeUiMapper @Inject constructor(
     private val strings: StringResolver,
 ) {
 
-    fun map(home: Home): HomeUiModel {
+    fun map(home: Home, selectedCategoryId: String): HomeUiModel {
         val locale = localeHandler.currentLocale()
+        // Falls back to All if the selected category disappears after a reload.
+        val selected = selectedCategoryId.takeIf { id -> home.categories.any { it.id == id } } ?: ALL_CATEGORY_ID
+        val inSelected = { campaign: Campaign -> selected == ALL_CATEGORY_ID || campaign.categoryId == selected }
         return HomeUiModel(
             categories = buildList {
                 add(CategoryUiModel(ALL_CATEGORY_ID, strings.getString(R.string.home_category_all)))
                 home.categories.mapTo(this) { CategoryUiModel(it.id, it.name) }
             },
-            featured = home.featured.map { it.toUiModel(locale) },
-            campaigns = home.campaigns.map { it.toUiModel(locale) },
+            selectedCategoryId = selected,
+            featured = home.featured.filter(inSelected).map { it.toUiModel(locale) },
+            campaigns = home.campaigns.filter(inSelected).map { it.toUiModel(locale) },
         )
     }
 
