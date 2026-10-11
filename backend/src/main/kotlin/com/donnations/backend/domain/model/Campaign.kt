@@ -29,4 +29,9 @@ data class Campaign(
         require(donorCount >= 0) { "Donor count cannot be negative" }
         require(endsAt.isAfter(createdAt)) { "Campaign must end after it starts" }
     }
+
+    val currency: Currency
+        get() = goal.currency
+
+    fun isOpenAt(time: Instant): Boolean = time.isBefore(endsAt)
 }
