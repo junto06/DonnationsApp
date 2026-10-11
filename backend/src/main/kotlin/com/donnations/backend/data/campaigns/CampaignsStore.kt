@@ -8,5 +8,5 @@ interface CampaignsStore {
 
     fun get(id: UUID): Campaign?
 
-    fun update(id: UUID, transform: (Campaign) -> Campaign): Campaign?
+    fun applyDonation(id: UUID, donationId: UUID, transform: (Campaign) -> Campaign): Campaign?
 }

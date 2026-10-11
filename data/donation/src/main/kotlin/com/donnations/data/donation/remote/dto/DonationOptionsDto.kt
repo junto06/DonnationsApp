@@ -9,5 +9,6 @@ data class DonationOptionsDto(
     @SerialName("campaignId") val campaignId: String,
     @SerialName("campaignTitle") val campaignTitle: String,
     @SerialName("currency") val currency: String,
+    @SerialName("acceptingDonations") val acceptingDonations: Boolean,
     @SerialName("suggestedAmounts") val suggestedAmounts: List<String>,
 )

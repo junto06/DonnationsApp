@@ -2,12 +2,15 @@ package com.donnations.feature.donation
 
 import app.cash.turbine.test
 import com.donnations.core.model.CampaignId
+import com.donnations.core.model.DonationId
 import com.donnations.domain.donation.exception.CampaignEndedException
 import com.donnations.domain.donation.exception.CampaignNotFoundException
 import com.donnations.domain.donation.exception.InvalidDonationAmountException
 import com.donnations.domain.donation.model.Donation
 import com.donnations.domain.donation.model.DonationOptions
+import com.donnations.domain.donation.model.DonationStatus
 import com.donnations.domain.donation.repository.DonationRepository
+import com.donnations.domain.donation.usecase.DonateUseCase
 import com.donnations.feature.donation.model.DonationUiMapper
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +36,7 @@ class DonationViewModelTest {
     private fun viewModel(locale: Locale = Locale.US) = DonationViewModel(
         campaignId = "c1",
         repository = repository,
+        donateUseCase = DonateUseCase(repository),
         mapper = DonationUiMapper({ locale }, testStrings),
     )
 
@@ -85,7 +89,7 @@ class DonationViewModelTest {
             viewModel.donate()
 
             val donated = expectMostRecentItem() as DonationUiState.Donated
-            assertEquals("Thank you! Your 12,50 € donation to Books for Every Child has been received.", donated.message)
+            assertEquals("Thank you! Your 12,50\u00A0€ donation to Books for Every Child has been received.", donated.message)
             assertEquals(listOf(BigDecimal("12.5")), repository.donatedAmounts)
         }
     }
@@ -127,7 +131,7 @@ class DonationViewModelTest {
 
     @Test
     fun `a failed donation shows an error that editing the amount clears`() = runTest {
-        repository.donateFailure = InvalidDonationAmountException()
+        repository.submitFailure = InvalidDonationAmountException()
         val viewModel = viewModel()
         viewModel.uiState.test {
             awaitItem()
@@ -147,7 +151,7 @@ class DonationViewModelTest {
 
     @Test
     fun `network failures on submit show a generic message`() = runTest {
-        repository.donateFailure = IllegalStateException("offline")
+        repository.submitFailure = IllegalStateException("offline")
         val viewModel = viewModel()
         viewModel.uiState.test {
             awaitItem()
@@ -156,6 +160,102 @@ class DonationViewModelTest {
             viewModel.donate()
 
             assertEquals("Couldn't confirm your donation.", (expectMostRecentItem() as DonationUiState.Success).donation.submitError)
+        }
+    }
+
+    @Test
+    fun `an ended campaign shows its title instead of the form`() = runTest {
+        repository.acceptingDonations = false
+
+        viewModel().uiState.test {
+            assertEquals(DonationUiState.Ended("Books for Every Child"), awaitItem())
+        }
+    }
+
+    @Test
+    fun `retrying the same amount reuses the donation id, a new amount gets a new one`() = runTest {
+        repository.submitFailure = IllegalStateException("response lost")
+        val viewModel = viewModel()
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.changeAmount("25")
+            awaitItem()
+            viewModel.donate()
+            expectMostRecentItem()
+
+            viewModel.changeAmount("25.00")
+            expectMostRecentItem()
+            viewModel.donate()
+            expectMostRecentItem()
+
+            viewModel.changeAmount("30")
+            expectMostRecentItem()
+            viewModel.donate()
+            expectMostRecentItem()
+        }
+
+        val (first, retry, changed) = repository.donationIds
+        assertEquals(first, retry)
+        assertTrue(first != changed)
+    }
+
+    @Test
+    fun `two successful donations of the same amount use different ids`() = runTest {
+        val first = viewModel()
+        first.uiState.test {
+            awaitItem()
+            first.changeAmount("25")
+            awaitItem()
+            first.donate()
+            expectMostRecentItem()
+        }
+        val second = viewModel()
+        second.uiState.test {
+            awaitItem()
+            second.changeAmount("25")
+            awaitItem()
+            second.donate()
+            expectMostRecentItem()
+        }
+
+        assertEquals(2, repository.donationIds.toSet().size)
+    }
+
+    @Test
+    fun `a donation still processing after the poll budget shows a message that invites a safe retry`() = runTest {
+        repository.submitStatus = DonationStatus.IN_PROGRESS
+        repository.pollStatuses = mutableListOf(DonationStatus.IN_PROGRESS) // never settles
+        val viewModel = viewModel()
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.changeAmount("25")
+            awaitItem()
+            viewModel.donate()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                "Your donation is still being processed.",
+                (expectMostRecentItem() as DonationUiState.Success).donation.submitError,
+            )
+        }
+    }
+
+    @Test
+    fun `a failure while polling shows its message`() = runTest {
+        repository.submitStatus = DonationStatus.IN_PROGRESS
+        repository.pollFailure = CampaignEndedException()
+        val viewModel = viewModel()
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.changeAmount("25")
+            awaitItem()
+            viewModel.donate()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                "This campaign has ended.",
+                (expectMostRecentItem() as DonationUiState.Success).donation.submitError,
+            )
         }
     }
 
@@ -190,22 +290,36 @@ class DonationViewModelTest {
 
     private class FakeDonationRepository : DonationRepository {
         var loadFailure: Throwable? = null
-        var donateFailure: Throwable? = null
+        var submitFailure: Throwable? = null
+        var pollFailure: Throwable? = null
         var gate: CompletableDeferred<Unit>? = null
+        var acceptingDonations = true
+        var submitStatus = DonationStatus.COMPLETED
+        var pollStatuses = mutableListOf(DonationStatus.COMPLETED)
         val requestedIds = mutableListOf<String>()
         val donatedAmounts = mutableListOf<BigDecimal>()
+        val donationIds = mutableListOf<DonationId>()
+        val polledIds = mutableListOf<DonationId>()
 
         override fun getDonationOptions(campaignId: CampaignId): Flow<DonationOptions> = flow {
             requestedIds += campaignId.value
             loadFailure?.let { throw it }
-            emit(donationOptions(campaignId.value))
+            emit(donationOptions(campaignId.value, acceptingDonations))
         }
 
-        override suspend fun donate(campaignId: CampaignId, amount: BigDecimal): Donation {
+        override suspend fun submitDonation(id: DonationId, campaignId: CampaignId, amount: BigDecimal): Donation {
             donatedAmounts += amount
+            donationIds += id
             gate?.await()
-            donateFailure?.let { throw it }
-            return donation(amount = amount.toPlainString(), campaignId = campaignId.value)
+            submitFailure?.let { throw it }
+            return donation(amount = amount.toPlainString(), campaignId = campaignId.value, status = submitStatus)
+        }
+
+        override suspend fun getDonation(id: DonationId): Donation {
+            polledIds += id
+            pollFailure?.let { throw it }
+            val status = if (pollStatuses.size > 1) pollStatuses.removeAt(0) else pollStatuses.first()
+            return donation(status = status)
         }
     }
 }

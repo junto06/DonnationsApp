@@ -77,6 +77,7 @@ fun DonationScreen(
             is DonationUiState.Error -> ErrorContent(uiState.message, uiState.retryable, onRetry, contentModifier)
             is DonationUiState.Success -> DonationContent(uiState.donation, onAmountChange, onDonate, contentModifier)
             is DonationUiState.Donated -> DonatedContent(uiState.message, onDone = onBack, contentModifier)
+            is DonationUiState.Ended -> EndedContent(uiState.campaignTitle, contentModifier)
         }
     }
 }
@@ -151,6 +152,22 @@ private fun DonatedContent(message: String, onDone: () -> Unit, modifier: Modifi
     ) {
         Text(message, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
         Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.donation_done)) }
+    }
+}
+
+@Composable
+private fun EndedContent(campaignTitle: String, modifier: Modifier) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(campaignTitle, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(
+            stringResource(R.string.donation_error_campaign_ended),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

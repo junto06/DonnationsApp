@@ -7,3 +7,9 @@ management:
     web:
       exposure:
         include: health
+
+donations:
+  processing:
+    # A claimed donation is retried by another worker if not finished within the lease.
+    lease: PT30S
+    recovery-interval: PT10S

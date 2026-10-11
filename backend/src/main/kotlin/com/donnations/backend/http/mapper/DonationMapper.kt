@@ -15,12 +15,16 @@ fun Donation.toDto(): DonationDto = DonationDto(
     campaignId = campaignId.value,
     currency = amount.currency.code,
     amount = amount.amount.toPlainString(),
+    status = status.name,
+    failureCode = failure?.value,
     createdAt = createdAt,
+    processedAt = processedAt,
 )
 
 fun DonationOptions.toDto(): DonationOptionsDto = DonationOptionsDto(
     campaignId = campaign.id.value,
     campaignTitle = campaign.title,
     currency = campaign.currency.code,
+    acceptingDonations = acceptingDonations,
     suggestedAmounts = suggestedAmounts.map { it.amount.toPlainString() },
 )
