@@ -8,4 +8,5 @@ sealed interface DonationUiState {
     data class Success(val donation: DonationUiModel) : DonationUiState
     data class Error(@StringRes val message: Int, val retryable: Boolean) : DonationUiState
     data class Donated(val message: String) : DonationUiState
+    data class Ended(val campaignTitle: String) : DonationUiState
 }

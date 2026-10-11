@@ -1,8 +1,11 @@
 package com.donnations.data.donation.repository
 
 import com.donnations.core.model.CampaignId
+import com.donnations.core.model.DonationId
 import com.donnations.data.donation.remote.DonationApi
+import com.donnations.data.donation.remote.dto.DonationDto
 import com.donnations.data.donation.remote.dto.DonationRequestDto
+import com.donnations.data.donation.remote.dto.DonationStatusDto
 import com.donnations.data.donation.remote.dto.ErrorResponseDto
 import com.donnations.data.donation.remote.toDomain
 import com.donnations.domain.donation.exception.CampaignEndedException
@@ -23,33 +26,37 @@ class DonationRepositoryImpl @Inject constructor(
     private val json: Json,
 ) : DonationRepository {
     override fun getDonationOptions(campaignId: CampaignId): Flow<DonationOptions> = flow {
-        val options = try {
-            api.getDonationOptions(campaignId.value)
-        } catch (e: HttpException) {
-            throw e.toDomainException()
-        }
-        emit(options.toDomain())
+        emit(httpCall { api.getDonationOptions(campaignId.value) }.toDomain())
     }
 
-    override suspend fun donate(campaignId: CampaignId, amount: BigDecimal): Donation {
-        val donation = try {
-            api.donate(campaignId.value, DonationRequestDto(amount.toPlainString()))
-        } catch (e: HttpException) {
-            throw e.toDomainException()
-        }
-        return donation.toDomain()
+    override suspend fun submitDonation(id: DonationId, campaignId: CampaignId, amount: BigDecimal): Donation =
+        httpCall { api.donate(campaignId.value, DonationRequestDto(id.value, amount.toPlainString())) }.toDomainOrThrow()
+
+    override suspend fun getDonation(id: DonationId): Donation =
+        httpCall { api.getDonation(id.value) }.toDomainOrThrow()
+
+    // A failed donation is surfaced as the domain exception for its failure code, like an error response would be.
+    private fun DonationDto.toDomainOrThrow(): Donation = when (status) {
+        DonationStatusDto.FAILED ->
+            throw failureCode?.toDomainExceptionOrNull() ?: IllegalStateException("Donation $id failed: $failureCode")
+        else -> toDomain()
     }
 
-    // Maps the backend's ErrorResponseDto.errorCode; anything else (e.g. 1002 malformed request) is a bug and propagates.
-    private fun HttpException.toDomainException(): Exception {
-        val errorCode = runCatching {
-            json.decodeFromString<ErrorResponseDto>(response()?.errorBody()?.string().orEmpty()).errorCode
-        }.getOrNull()
-        return when (errorCode) {
-            "1004" -> CampaignNotFoundException()
-            "1005" -> InvalidDonationAmountException()
-            "1006" -> CampaignEndedException()
-            else -> this
-        }
+    private suspend fun <T> httpCall(call: suspend () -> T): T = try {
+        call()
+    } catch (e: HttpException) {
+        throw e.errorCode()?.toDomainExceptionOrNull() ?: e
+    }
+
+    private fun HttpException.errorCode(): String? = runCatching {
+        json.decodeFromString<ErrorResponseDto>(response()?.errorBody()?.string().orEmpty()).errorCode
+    }.getOrNull()
+
+    // Backend ErrorCodes the user can act on; anything else (e.g. 1002 malformed request) is a bug and propagates.
+    private fun String.toDomainExceptionOrNull(): Exception? = when (this) {
+        "1004" -> CampaignNotFoundException()
+        "1005" -> InvalidDonationAmountException()
+        "1006" -> CampaignEndedException()
+        else -> null
     }
 }

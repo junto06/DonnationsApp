@@ -7,3 +7,6 @@ class CampaignEndedException : DonationException("Campaign is no longer acceptin
 class CampaignNotFoundException : DonationException("Campaign not found")
 
 class InvalidDonationAmountException : DonationException("Donation amount was rejected")
+
+// Accepted but not finished within the polling window; retrying with the same donation id is safe.
+class DonationStillProcessingException : DonationException("Donation is still being processed")

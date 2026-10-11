@@ -7,5 +7,6 @@ data class DonationOptions(
     val campaignId: CampaignId,
     val campaignTitle: String,
     val currencyCode: String,
+    val acceptingDonations: Boolean, // false once the campaign has ended; suggestedAmounts is then empty
     val suggestedAmounts: List<BigDecimal>,
 )
