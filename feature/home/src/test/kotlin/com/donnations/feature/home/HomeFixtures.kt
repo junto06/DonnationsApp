@@ -30,10 +30,13 @@ fun home() = Home(
 )
 
 // Mirrors res/values/strings.xml so mapper tests run on the JVM without Android resources.
-val testStrings = StringResolver { id, args ->
-    when (id) {
+val testStrings = object : StringResolver {
+    override fun getString(id: Int, vararg formatArgs: Any): String = when (id) {
         R.string.home_category_all -> "All"
-        R.string.home_goal_of -> "of %1\$s".format(*args)
+        R.string.home_goal_of -> "of %1\$s".format(*formatArgs)
         else -> error("Unexpected string id $id")
     }
+
+    override fun getQuantityString(id: Int, quantity: Int, vararg formatArgs: Any): String =
+        error("Unexpected plurals id $id")
 }
