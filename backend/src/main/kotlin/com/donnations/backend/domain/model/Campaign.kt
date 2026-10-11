@@ -35,7 +35,8 @@ data class Campaign(
     val currency: Currency
         get() = goal.currency
 
-    fun isOpenAt(time: Instant): Boolean = time.isBefore(endsAt)
+    fun isOpenAt(time: Instant): Boolean =
+        time.isBefore(endsAt)
 
     fun receive(amount: Money, at: Instant): Campaign {
         if (!isOpenAt(at)) throw CampaignEndedException()

@@ -1,5 +1,7 @@
 package com.donnations.backend.http
 
+import com.jayway.jsonpath.JsonPath
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -9,6 +11,7 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.math.BigDecimal
 
 // Donations mutate the seeded in-memory store, so later test classes get a fresh context.
 @SpringBootTest
@@ -28,9 +31,16 @@ class DonationsControllerTest(@Autowired private val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `returns 404 for donation options of an unknown campaign`() {
+        mockMvc.get("/api/v1/campaigns/00000000-0000-0000-0000-000000000000/donation-options").andExpect {
+            status { isNotFound() }
+            jsonPath("$.errorCode") { value("1004") }
+        }
+    }
+
+    @Test
     fun `creates a donation and updates the campaign`() {
-        val before = mockMvc.get("/api/v1/campaigns/$BOOKS_ID").andReturn().response.contentAsString
-        val raisedBefore = Regex("\"raised\":\"([0-9.]+)\"").find(before)!!.groupValues[1].toBigDecimal()
+        val raisedBefore = raised()
 
         donate("""{"amount":"25.50"}""").andExpect {
             status { isCreated() }
@@ -40,9 +50,7 @@ class DonationsControllerTest(@Autowired private val mockMvc: MockMvc) {
             jsonPath("$.id") { exists() }
         }
 
-        mockMvc.get("/api/v1/campaigns/$BOOKS_ID").andExpect {
-            jsonPath("$.raised") { value(raisedBefore.add("25.50".toBigDecimal()).toPlainString()) }
-        }
+        assertEquals(raisedBefore.add(BigDecimal("25.50")), raised())
     }
 
     @Test
@@ -72,6 +80,11 @@ class DonationsControllerTest(@Autowired private val mockMvc: MockMvc) {
             status { isNotFound() }
             jsonPath("$.errorCode") { value("1004") }
         }
+    }
+
+    private fun raised(): BigDecimal {
+        val body = mockMvc.get("/api/v1/campaigns/$BOOKS_ID").andReturn().response.contentAsString
+        return BigDecimal(JsonPath.read<String>(body, "$.raised"))
     }
 
     private fun donate(body: String) = mockMvc.post("/api/v1/campaigns/$BOOKS_ID/donations") {
