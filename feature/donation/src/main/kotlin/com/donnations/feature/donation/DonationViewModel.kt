@@ -1,6 +1,7 @@
 package com.donnations.feature.donation
 
 import androidx.annotation.StringRes
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.donnations.core.model.CampaignId
@@ -38,6 +39,7 @@ class DonationViewModel @AssistedInject constructor(
     repository: DonationRepository,
     private val donateUseCase: DonateUseCase,
     mapper: DonationUiMapper,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -47,12 +49,9 @@ class DonationViewModel @AssistedInject constructor(
 
     private val campaignId = CampaignId(campaignId)
     private val loadRequests = MutableStateFlow(0)
-    private val amount = MutableStateFlow("")
+    // Saved so the typed amount survives process death and a retry is one tap.
+    private val amount = savedStateHandle.getStateFlow(AMOUNT_KEY, "")
     private val submission = MutableStateFlow<DonationSubmission>(DonationSubmission.Idle)
-
-    // Idempotency key of the attempt still awaiting confirmation; retrying it (same amount) can't double-charge.
-    // Cleared on success, so any later donation, even of the same amount, gets a new key and counts again.
-    private var attempt: Pair<BigDecimal, DonationId>? = null
 
     val uiState: StateFlow<DonationUiState> = loadRequests
         .flatMapLatest {
@@ -73,24 +72,39 @@ class DonationViewModel @AssistedInject constructor(
     fun changeAmount(text: String) {
         // Clear the error first so no frame shows the new amount next to the old error.
         if (submission.value is DonationSubmission.Failed) submission.value = DonationSubmission.Idle
-        amount.value = text
+        savedStateHandle[AMOUNT_KEY] = text
     }
 
     fun donate() {
         val toDonate = (uiState.value as? DonationUiState.Success)?.donation?.amountToDonate ?: return
         if (submission.value is DonationSubmission.Submitting) return
-        val donationId = attempt?.takeIf { (amount, _) -> amount.compareTo(toDonate) == 0 }?.second
-            ?: DonationId(UUID.randomUUID().toString()).also { attempt = toDonate to it }
+        val donationId = attemptIdFor(toDonate)
         submission.value = DonationSubmission.Submitting
         viewModelScope.launch {
             submission.value = try {
-                DonationSubmission.Done(donateUseCase(donationId, campaignId, toDonate)).also { attempt = null }
+                DonationSubmission.Done(donateUseCase(donationId, campaignId, toDonate)).also { clearAttempts() }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 DonationSubmission.Failed(e.toSubmitErrorMessage())
             }
         }
+    }
+
+    // One idempotency key per amount among attempts not yet confirmed, so retrying an amount (even after editing
+    // away and back, or after process death) reuses its key and can't double-charge. All cleared on success.
+    private fun attemptIdFor(amount: BigDecimal): DonationId {
+        val key = amount.stripTrailingZeros().toPlainString()
+        val attempts = savedStateHandle.get<HashMap<String, String>>(ATTEMPTS_KEY) ?: HashMap()
+        attempts[key]?.takeIf { it.isNotBlank() }?.let { return DonationId(it) }
+        return DonationId(UUID.randomUUID().toString()).also {
+            attempts[key] = it.value
+            savedStateHandle[ATTEMPTS_KEY] = attempts
+        }
+    }
+
+    private fun clearAttempts() {
+        savedStateHandle.remove<HashMap<String, String>>(ATTEMPTS_KEY)
     }
 
     fun retry() {
@@ -127,5 +141,10 @@ class DonationViewModel @AssistedInject constructor(
         }
 
         else -> R.string.donation_error_submit
+    }
+
+    private companion object {
+        const val AMOUNT_KEY = "amount"
+        const val ATTEMPTS_KEY = "attempts"
     }
 }
