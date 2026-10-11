@@ -9,4 +9,11 @@ data class Money(val amountMinor: Long, val currency: Currency) {
     }
 
     val amount: BigDecimal get() = BigDecimal.valueOf(amountMinor, currency.fractionDigits)
+
+    companion object {
+        // Null when the amount is negative, has more decimals than the currency allows, or overflows.
+        fun ofMajorOrNull(amount: BigDecimal, currency: Currency): Money? = runCatching {
+            Money(amount.setScale(currency.fractionDigits).unscaledValue().longValueExact(), currency)
+        }.getOrNull()
+    }
 }

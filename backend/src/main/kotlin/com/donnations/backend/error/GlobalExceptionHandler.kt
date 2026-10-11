@@ -1,5 +1,6 @@
 package com.donnations.backend.error
 
+import com.donnations.backend.domain.exception.CampaignEndedException
 import com.donnations.backend.domain.exception.CampaignNotFoundException
 import com.donnations.backend.domain.exception.ErrorCode
 import com.donnations.backend.http.dto.ErrorResponseDto
@@ -19,6 +20,10 @@ class GlobalExceptionHandler {
     @ExceptionHandler(CampaignNotFoundException::class)
     fun handleNotFound(e: CampaignNotFoundException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.NOT_FOUND, e.message.orEmpty(), e.errorCode)
+
+    @ExceptionHandler(CampaignEndedException::class)
+    fun handleCampaignEnded(e: CampaignEndedException): ResponseEntity<ErrorResponseDto> =
+        error(HttpStatus.CONFLICT, e.message.orEmpty(), e.errorCode)
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleTypeMismatch(e: MethodArgumentTypeMismatchException): ResponseEntity<ErrorResponseDto> =
