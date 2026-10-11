@@ -8,6 +8,7 @@ import com.donnations.backend.domain.model.Currency
 import com.donnations.backend.domain.model.Money
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import org.springframework.stereotype.Component
 
 // Seeded placeholder until a database is added
@@ -17,11 +18,14 @@ class InMemoryCampaignsStore(
     campaigns: List<Campaign> = seedCampaigns,
 ) : CampaignsStore {
 
-    private val campaigns = campaigns.associateBy { it.id.value }
+    private val campaigns = ConcurrentHashMap(campaigns.associateBy { it.id.value })
 
     override fun getAll(): List<Campaign> = campaigns.values.toList()
 
     override fun get(id: UUID): Campaign? = campaigns[id]
+
+    override fun update(id: UUID, transform: (Campaign) -> Campaign): Campaign? =
+        campaigns.computeIfPresent(id) { _, campaign -> transform(campaign) }
 }
 
 private val seedCampaigns = listOf(
