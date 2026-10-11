@@ -2,6 +2,7 @@ package com.donnations.feature.campaign
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.donnations.core.model.CampaignId
 import com.donnations.domain.campaign.repository.CampaignRepository
 import com.donnations.feature.campaign.model.CampaignDetailUiMapper
 import dagger.assisted.Assisted
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.update
 
 @HiltViewModel(assistedFactory = CampaignDetailViewModel.Factory::class)
 class CampaignDetailViewModel @AssistedInject constructor(
+    // String, not CampaignId: Dagger can't handle value classes in injected signatures.
     @Assisted campaignId: String,
     repository: CampaignRepository,
     mapper: CampaignDetailUiMapper,
@@ -34,7 +36,7 @@ class CampaignDetailViewModel @AssistedInject constructor(
 
     val uiState: StateFlow<CampaignDetailUiState> = loadRequests
         .flatMapLatest {
-            repository.getCampaign(campaignId)
+            repository.getCampaign(CampaignId(campaignId))
                 .map<_, CampaignDetailUiState> { CampaignDetailUiState.Success(mapper.map(it)) }
                 .onStart { emit(CampaignDetailUiState.Loading) }
                 .catch { emit(CampaignDetailUiState.Error(R.string.campaign_detail_error_load)) }

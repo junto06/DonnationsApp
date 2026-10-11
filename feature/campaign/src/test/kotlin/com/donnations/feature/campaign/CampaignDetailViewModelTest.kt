@@ -1,6 +1,7 @@
 package com.donnations.feature.campaign
 
 import app.cash.turbine.test
+import com.donnations.core.model.CampaignId
 import com.donnations.domain.campaign.model.CampaignDetail
 import com.donnations.domain.campaign.repository.CampaignRepository
 import com.donnations.feature.campaign.model.CampaignDetailUiMapper
@@ -69,10 +70,10 @@ class CampaignDetailViewModelTest {
         var failure: Throwable? = null
         val requestedIds = mutableListOf<String>()
 
-        override fun getCampaign(id: String): Flow<CampaignDetail> = flow {
-            requestedIds += id
+        override fun getCampaign(id: CampaignId): Flow<CampaignDetail> = flow {
+            requestedIds += id.value
             failure?.let { throw it }
-            emit(campaignDetail(id = id))
+            emit(campaignDetail(id = id.value))
         }
     }
 }

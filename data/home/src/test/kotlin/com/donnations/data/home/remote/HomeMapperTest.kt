@@ -39,7 +39,7 @@ class HomeMapperTest {
         ).toDomain()
 
         assertEquals(listOf("education", "health"), home.categories.map { it.id })
-        assertEquals(listOf("c1"), home.featured.map { it.id })
-        assertEquals(listOf("c2", "c3"), home.campaigns.map { it.id })
+        assertEquals(listOf("c1"), home.featured.map { it.id.value })
+        assertEquals(listOf("c2", "c3"), home.campaigns.map { it.id.value })
     }
 }

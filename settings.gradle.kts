@@ -26,6 +26,7 @@ include(":app")
 
 // Core
 include(":core:base")
+include(":core:model")
 include(":core:designsystem")
 include(":core:network:base")
 include(":core:network:impl")

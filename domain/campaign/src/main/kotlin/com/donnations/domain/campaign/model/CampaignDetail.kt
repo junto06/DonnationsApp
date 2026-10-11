@@ -1,10 +1,11 @@
 package com.donnations.domain.campaign.model
 
+import com.donnations.core.model.CampaignId
 import java.math.BigDecimal
 import java.time.Instant
 
 data class CampaignDetail(
-    val id: String,
+    val id: CampaignId,
     val title: String,
     val summary: String,
     val description: String,

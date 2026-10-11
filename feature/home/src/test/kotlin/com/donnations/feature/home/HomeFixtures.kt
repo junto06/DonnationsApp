@@ -1,5 +1,6 @@
 package com.donnations.feature.home
 
+import com.donnations.core.model.CampaignId
 import com.donnations.core.base.StringResolver
 import com.donnations.domain.home.model.Campaign
 import com.donnations.domain.home.model.Category
@@ -12,7 +13,7 @@ fun campaign(
     goal: String = "10000.00",
     raised: String = "8210.00",
 ) = Campaign(
-    id = id,
+    id = CampaignId(id),
     title = "Winter Relief",
     summary = "Warm meals",
     location = "Gaziantep, Turkey",
