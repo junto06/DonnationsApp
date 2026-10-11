@@ -2,6 +2,8 @@ package com.donnations.backend.error
 
 import com.donnations.backend.domain.exception.CampaignEndedException
 import com.donnations.backend.domain.exception.CampaignNotFoundException
+import com.donnations.backend.domain.exception.DonationConflictException
+import com.donnations.backend.domain.exception.DonationNotFoundException
 import com.donnations.backend.domain.exception.ErrorCode
 import com.donnations.backend.domain.exception.InvalidDonationAmountException
 import com.donnations.backend.http.dto.ErrorResponseDto
@@ -23,12 +25,20 @@ class GlobalExceptionHandler {
     fun handleNotFound(e: CampaignNotFoundException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.NOT_FOUND, e.message.orEmpty(), e.errorCode)
 
+    @ExceptionHandler(DonationNotFoundException::class)
+    fun handleDonationNotFound(e: DonationNotFoundException): ResponseEntity<ErrorResponseDto> =
+        error(HttpStatus.NOT_FOUND, e.message.orEmpty(), e.errorCode)
+
     @ExceptionHandler(InvalidDonationAmountException::class)
     fun handleInvalidDonationAmount(e: InvalidDonationAmountException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.BAD_REQUEST, e.message.orEmpty(), e.errorCode)
 
     @ExceptionHandler(CampaignEndedException::class)
     fun handleCampaignEnded(e: CampaignEndedException): ResponseEntity<ErrorResponseDto> =
+        error(HttpStatus.CONFLICT, e.message.orEmpty(), e.errorCode)
+
+    @ExceptionHandler(DonationConflictException::class)
+    fun handleDonationConflict(e: DonationConflictException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.CONFLICT, e.message.orEmpty(), e.errorCode)
 
     @ExceptionHandler(HttpMessageNotReadableException::class)

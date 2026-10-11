@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.post
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.UUID
 
 // Runs with the clock after every seeded campaign's end date (the nested @TestConfiguration is picked up automatically).
 @SpringBootTest
@@ -28,10 +29,12 @@ class EndedCampaignDonationsControllerTest(@Autowired private val mockMvc: MockM
     }
 
     @Test
-    fun `options for an ended campaign return 409`() {
+    fun `options for an ended campaign return 200 with acceptingDonations false`() {
         mockMvc.get("/api/v1/campaigns/$BOOKS_ID/donation-options").andExpect {
-            status { isConflict() }
-            jsonPath("$.errorCode") { value("1006") }
+            status { isOk() }
+            jsonPath("$.campaignTitle") { value("Books for Every Child") }
+            jsonPath("$.acceptingDonations") { value(false) }
+            jsonPath("$.suggestedAmounts.length()") { value(0) }
         }
     }
 
@@ -39,7 +42,7 @@ class EndedCampaignDonationsControllerTest(@Autowired private val mockMvc: MockM
     fun `donating to an ended campaign returns 409`() {
         mockMvc.post("/api/v1/campaigns/$BOOKS_ID/donations") {
             contentType = MediaType.APPLICATION_JSON
-            content = """{"amount":"10.00"}"""
+            content = """{"donationId":"${UUID.randomUUID()}","amount":"10.00"}"""
         }.andExpect {
             status { isConflict() }
             jsonPath("$.errorCode") { value("1006") }

@@ -1,8 +1,8 @@
 package com.donnations.backend.domain.usecase
 
-import com.donnations.backend.domain.exception.CampaignEndedException
 import com.donnations.backend.domain.exception.CampaignNotFoundException
 import com.donnations.backend.domain.model.CampaignId
+import com.donnations.backend.domain.model.Currency
 import com.donnations.backend.domain.model.DonationOptions
 import com.donnations.backend.domain.model.Money
 import com.donnations.backend.domain.repository.CampaignsRepository
@@ -17,12 +17,16 @@ class GetDonationOptionsUseCase(
 ) {
     operator fun invoke(campaignId: CampaignId): DonationOptions {
         val campaign = campaignsRepository.getById(campaignId) ?: throw CampaignNotFoundException()
-        if (!campaign.isOpenAt(clock.instant())) throw CampaignEndedException()
+        val open = campaign.isOpenAt(clock.instant())
         return DonationOptions(
             campaign = campaign,
-            suggestedAmounts = SUGGESTED_MAJOR_AMOUNTS.map { checkNotNull(Money.ofMajorOrNull(BigDecimal(it), campaign.currency)) },
+            acceptingDonations = open,
+            suggestedAmounts = if (open) suggestedAmounts(campaign.currency) else emptyList(),
         )
     }
+
+    private fun suggestedAmounts(currency: Currency): List<Money> =
+        SUGGESTED_MAJOR_AMOUNTS.map { checkNotNull(Money.ofMajorOrNull(BigDecimal(it), currency)) }
 
     private companion object {
         // Same presets for every campaign until amounts become configurable per market.

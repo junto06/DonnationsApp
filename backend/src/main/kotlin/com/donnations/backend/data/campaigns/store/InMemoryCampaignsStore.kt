@@ -18,14 +18,21 @@ class InMemoryCampaignsStore(
     campaigns: List<Campaign> = seedCampaigns,
 ) : CampaignsStore {
 
-    private val campaigns = ConcurrentHashMap(campaigns.associateBy { it.id.value })
+    // Applied donation ids live in the same entry as the campaign so both change in one atomic compute,
+    // like a campaign_donations row written in the campaign update's transaction.
+    private data class Entry(val campaign: Campaign, val appliedDonations: Set<UUID> = emptySet())
 
-    override fun getAll(): List<Campaign> = campaigns.values.toList()
+    private val entries = ConcurrentHashMap(campaigns.associate { it.id.value to Entry(it) })
 
-    override fun get(id: UUID): Campaign? = campaigns[id]
+    override fun getAll(): List<Campaign> = entries.values.map { it.campaign }
 
-    override fun update(id: UUID, transform: (Campaign) -> Campaign): Campaign? =
-        campaigns.computeIfPresent(id) { _, campaign -> transform(campaign) }
+    override fun get(id: UUID): Campaign? = entries[id]?.campaign
+
+    override fun applyDonation(id: UUID, donationId: UUID, transform: (Campaign) -> Campaign): Campaign? =
+        entries.computeIfPresent(id) { _, entry ->
+            if (donationId in entry.appliedDonations) entry
+            else Entry(transform(entry.campaign), entry.appliedDonations + donationId)
+        }?.campaign
 }
 
 private val seedCampaigns = listOf(

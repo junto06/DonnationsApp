@@ -12,6 +12,8 @@ enum class ErrorCode(val value: String) {
     CAMPAIGN_NOT_FOUND("1004"),
     INVALID_DONATION_AMOUNT("1005"),
     CAMPAIGN_ENDED("1006"),
+    DONATION_NOT_FOUND("1007"),
+    DONATION_CONFLICT("1008"),
 }
 
 class CampaignNotFoundException :
@@ -22,3 +24,9 @@ class InvalidDonationAmountException :
 
 class CampaignEndedException :
     DomainException("Campaign is no longer accepting donations", errorCode = ErrorCode.CAMPAIGN_ENDED)
+
+class DonationNotFoundException :
+    DomainException("Donation not found", errorCode = ErrorCode.DONATION_NOT_FOUND)
+
+class DonationConflictException :
+    DomainException("Donation id was already used for a different donation", errorCode = ErrorCode.DONATION_CONFLICT)
