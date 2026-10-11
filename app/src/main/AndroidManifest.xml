@@ -16,6 +16,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- donnations://donate/{campaignId}; keep in sync with DONATION_DEEP_LINK_BASE in feature/donation. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="donnations" android:host="donate" />
+            </intent-filter>
         </activity>
     </application>
 

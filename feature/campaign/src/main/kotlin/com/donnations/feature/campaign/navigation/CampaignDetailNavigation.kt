@@ -14,8 +14,9 @@ fun NavController.navigateToCampaignDetail(campaignId: String) {
     navigate(CampaignDetailDestination(campaignId))
 }
 
-fun NavGraphBuilder.campaignDetailScreen(onBack: () -> Unit) {
+fun NavGraphBuilder.campaignDetailScreen(onBack: () -> Unit, onDonate: (campaignId: String) -> Unit) {
     composable<CampaignDetailDestination> { entry ->
-        CampaignDetailRoute(campaignId = entry.toRoute<CampaignDetailDestination>().campaignId, onBack = onBack)
+        val campaignId = entry.toRoute<CampaignDetailDestination>().campaignId
+        CampaignDetailRoute(campaignId = campaignId, onBack = onBack, onDonate = { onDonate(campaignId) })
     }
 }
