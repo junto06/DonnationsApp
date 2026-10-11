@@ -6,7 +6,10 @@
     <string name="donation_amount">Amount</string>
     <string name="donation_amount_invalid">Enter a valid amount</string>
     <string name="donation_donate">Donate</string>
-    <string name="donation_coming_soon">Online donations are coming soon.</string>
+    <string name="donation_thanks">Thank you! Your %1$s donation to %2$s has been received.</string>
+    <string name="donation_done">Done</string>
+    <string name="donation_error_amount_rejected">This amount can\'t be accepted. Please enter a different amount.</string>
+    <string name="donation_error_submit">Couldn\'t confirm your donation. Check your connection and try again.</string>
     <string name="donation_error_load">Couldn\'t load donation options. Please try again.</string>
     <string name="donation_error_campaign_ended">This campaign has ended and is no longer accepting donations.</string>
     <string name="donation_error_campaign_not_found">We couldn\'t find this campaign.</string>

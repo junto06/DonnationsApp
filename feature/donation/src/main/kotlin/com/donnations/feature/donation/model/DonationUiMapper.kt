@@ -2,6 +2,7 @@ package com.donnations.feature.donation.model
 
 import com.donnations.core.base.LocaleHandler
 import com.donnations.core.base.StringResolver
+import com.donnations.domain.donation.model.Donation
 import com.donnations.domain.donation.model.DonationOptions
 import com.donnations.feature.donation.R
 import java.math.BigDecimal
@@ -17,31 +18,44 @@ class DonationUiMapper @Inject constructor(
     private val strings: StringResolver,
 ) {
 
-    fun map(options: DonationOptions, amount: String): DonationUiModel {
+    fun map(options: DonationOptions, amount: String, submission: DonationSubmission): DonationUiModel {
         val locale = localeHandler.currentLocale()
         val currency = Currency.getInstance(options.currencyCode)
-        val money = NumberFormat.getCurrencyInstance(locale).apply {
-            this.currency = currency
-            minimumFractionDigits = 0
-            maximumFractionDigits = currency.defaultFractionDigits
-        }
         val input = inputFormat(locale, currency)
         val parsed = parse(amount, input)
+        val valid = isValid(parsed, currency)
         return DonationUiModel(
             campaignTitle = options.campaignTitle,
             presets = options.suggestedAmounts.map { preset ->
                 AmountPresetUiModel(
-                    label = money.format(preset),
+                    label = formatMoney(preset, currency, locale),
                     inputValue = input.format(preset),
                     selected = parsed != null && parsed.compareTo(preset) == 0,
                 )
             },
             currencySymbol = currency.getSymbol(locale),
             amount = amount,
-            amountError = strings.getString(R.string.donation_amount_invalid)
-                .takeIf { amount.isNotBlank() && !isValid(parsed, currency) },
+            amountError = strings.getString(R.string.donation_amount_invalid).takeIf { amount.isNotBlank() && !valid },
+            amountToDonate = parsed.takeIf { valid },
+            isSubmitting = submission is DonationSubmission.Submitting,
+            submitError = (submission as? DonationSubmission.Failed)?.let { strings.getString(it.message) },
         )
     }
+
+    fun mapThanks(options: DonationOptions, donation: Donation): String {
+        val locale = localeHandler.currentLocale()
+        val amount = formatMoney(donation.amount, Currency.getInstance(donation.currencyCode), locale)
+        return strings.getString(R.string.donation_thanks, amount, options.campaignTitle)
+    }
+
+    // Whole amounts without decimals ("€25"), others with the currency's full precision ("€12.50", never "€12.5").
+    private fun formatMoney(amount: BigDecimal, currency: Currency, locale: Locale): String =
+        NumberFormat.getCurrencyInstance(locale).apply {
+            this.currency = currency
+            val fraction = if (amount.stripTrailingZeros().scale() > 0) currency.defaultFractionDigits else 0
+            minimumFractionDigits = fraction
+            maximumFractionDigits = fraction
+        }.format(amount)
 
 
     private fun inputFormat(locale: Locale, currency: Currency): DecimalFormat =
