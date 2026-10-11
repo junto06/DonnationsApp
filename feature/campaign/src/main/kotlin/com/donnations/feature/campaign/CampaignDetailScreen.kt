@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.donnations.core.designsystem.component.BackButton
 import com.donnations.core.designsystem.component.FundingProgress
 import com.donnations.core.designsystem.component.LoadingWheel
 import com.donnations.core.designsystem.component.RemoteImage
@@ -61,9 +61,7 @@ fun CampaignDetailScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.campaign_detail_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Text(stringResource(R.string.campaign_detail_back))
-                    }
+                    BackButton(onClick = onBack, contentDescription = stringResource(R.string.campaign_detail_back))
                 },
             )
         },
