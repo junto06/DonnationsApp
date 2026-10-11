@@ -8,6 +8,7 @@ import java.math.BigDecimal
 
 fun campaign(
     id: String = "c1",
+    categoryId: String = "emergency",
     goal: String = "10000.00",
     raised: String = "8210.00",
 ) = Campaign(
@@ -15,7 +16,7 @@ fun campaign(
     title = "Winter Relief",
     summary = "Warm meals",
     location = "Gaziantep, Turkey",
-    categoryId = "emergency",
+    categoryId = categoryId,
     imageUrl = "https://example.com/a.jpg",
     currencyCode = "EUR",
     goal = BigDecimal(goal),
@@ -23,9 +24,9 @@ fun campaign(
 )
 
 fun home() = Home(
-    categories = listOf(Category("education", "Education")),
+    categories = listOf(Category("education", "Education"), Category("emergency", "Emergency")),
     featured = listOf(campaign(id = "f1")),
-    campaigns = listOf(campaign(id = "c1")),
+    campaigns = listOf(campaign(id = "c1"), campaign(id = "c2", categoryId = "education")),
 )
 
 // Mirrors res/values/strings.xml so mapper tests run on the JVM without Android resources.

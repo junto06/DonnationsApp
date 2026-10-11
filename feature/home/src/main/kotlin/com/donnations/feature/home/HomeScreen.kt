@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,9 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -33,7 +32,6 @@ import com.donnations.core.designsystem.component.LoadingWheel
 import com.donnations.feature.home.component.CampaignRow
 import com.donnations.feature.home.component.CategoryTabs
 import com.donnations.feature.home.component.FeaturedCarousel
-import com.donnations.feature.home.model.HomeUiMapper
 import com.donnations.feature.home.model.HomeUiModel
 
 @Composable
@@ -45,7 +43,8 @@ fun HomeRoute(
     HomeScreen(
         uiState = uiState,
         onRetry = viewModel::retry,
-        onCampaignClick = onCampaignClick
+        onCategorySelect = viewModel::selectCategory,
+        onCampaignClick = onCampaignClick,
     )
 }
 
@@ -53,6 +52,7 @@ fun HomeRoute(
 fun HomeScreen(
     uiState: HomeUiState,
     onRetry: () -> Unit,
+    onCategorySelect: (String) -> Unit,
     onCampaignClick: (String) -> Unit,
 ) {
     Scaffold(
@@ -70,7 +70,7 @@ fun HomeScreen(
         when (uiState) {
             HomeUiState.Loading -> LoadingWheel(contentModifier)
             is HomeUiState.Error -> ErrorContent(uiState.message, onRetry, contentModifier)
-            is HomeUiState.Success -> HomeContent(uiState.home, onCampaignClick, contentModifier)
+            is HomeUiState.Success -> HomeContent(uiState.home, onCategorySelect, onCampaignClick, contentModifier)
         }
     }
 }
@@ -78,10 +78,10 @@ fun HomeScreen(
 @Composable
 private fun HomeContent(
     home: HomeUiModel,
+    onCategorySelect: (String) -> Unit,
     onCampaignClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedCategoryId by rememberSaveable { mutableStateOf(HomeUiMapper.ALL_CATEGORY_ID) }
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(bottom = 16.dp),
@@ -90,17 +90,20 @@ private fun HomeContent(
         item(key = "categories") {
             CategoryTabs(
                 categories = home.categories,
-                selectedId = selectedCategoryId,
-                onSelect = { selectedCategoryId = it },
+                selectedId = home.selectedCategoryId,
+                onSelect = onCategorySelect,
             )
         }
         if (home.featured.isNotEmpty()) {
             item(key = "featured") {
-                FeaturedCarousel(
-                    campaigns = home.featured,
-                    onDonateClick = onCampaignClick,
-                    modifier = Modifier.padding(vertical = 8.dp),
-                )
+                // Fresh pager per category so it never sits on a page the filtered list no longer has.
+                key(home.selectedCategoryId) {
+                    FeaturedCarousel(
+                        campaigns = home.featured,
+                        onDonateClick = onCampaignClick,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                }
             }
         }
         if (home.campaigns.isNotEmpty()) {
@@ -114,6 +117,18 @@ private fun HomeContent(
             }
             items(home.campaigns, key = { it.id }) { campaign ->
                 CampaignRow(campaign = campaign, onClick = onCampaignClick)
+            }
+        }
+        if (home.featured.isEmpty() && home.campaigns.isEmpty()) {
+            item(key = "empty") {
+                Text(
+                    text = stringResource(R.string.home_empty_category),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                )
             }
         }
     }
