@@ -1,5 +1,7 @@
 package com.donnations.backend.domain.model
 
+import com.donnations.backend.domain.exception.CampaignEndedException
+import com.donnations.backend.domain.exception.InvalidDonationAmountException
 import java.time.Instant
 import java.util.UUID
 
@@ -34,4 +36,15 @@ data class Campaign(
         get() = goal.currency
 
     fun isOpenAt(time: Instant): Boolean = time.isBefore(endsAt)
+
+    fun receive(amount: Money, at: Instant): Campaign {
+        if (!isOpenAt(at)) throw CampaignEndedException()
+        if (amount.amountMinor <= 0 || amount.currency != currency) throw InvalidDonationAmountException()
+        // An amount that overflows the running totals is rejected like any other invalid amount, not a 500.
+        return try {
+            copy(raised = raised + amount, donorCount = Math.addExact(donorCount, 1))
+        } catch (e: ArithmeticException) {
+            throw InvalidDonationAmountException()
+        }
+    }
 }

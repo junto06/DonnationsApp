@@ -12,4 +12,7 @@ class CampaignsRepositoryImpl(
     override fun getAll(): List<Campaign> = campaignsStore.getAll()
 
     override fun getById(id: CampaignId): Campaign? = campaignsStore.get(id.value)
+
+    override fun update(id: CampaignId, transform: (Campaign) -> Campaign): Campaign? =
+        campaignsStore.update(id.value, transform)
 }

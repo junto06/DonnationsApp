@@ -7,4 +7,6 @@ interface CampaignsStore {
     fun getAll(): List<Campaign>
 
     fun get(id: UUID): Campaign?
+
+    fun update(id: UUID, transform: (Campaign) -> Campaign): Campaign?
 }

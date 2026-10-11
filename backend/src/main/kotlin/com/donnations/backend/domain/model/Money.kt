@@ -10,6 +10,11 @@ data class Money(val amountMinor: Long, val currency: Currency) {
 
     val amount: BigDecimal get() = BigDecimal.valueOf(amountMinor, currency.fractionDigits)
 
+    operator fun plus(other: Money): Money {
+        require(currency == other.currency) { "Cannot add ${other.currency} to $currency" }
+        return Money(Math.addExact(amountMinor, other.amountMinor), currency)
+    }
+
     companion object {
         // Null when the amount is negative, has more decimals than the currency allows, or overflows.
         fun ofMajorOrNull(amount: BigDecimal, currency: Currency): Money? = runCatching {

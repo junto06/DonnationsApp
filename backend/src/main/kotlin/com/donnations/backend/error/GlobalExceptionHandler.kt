@@ -3,10 +3,12 @@ package com.donnations.backend.error
 import com.donnations.backend.domain.exception.CampaignEndedException
 import com.donnations.backend.domain.exception.CampaignNotFoundException
 import com.donnations.backend.domain.exception.ErrorCode
+import com.donnations.backend.domain.exception.InvalidDonationAmountException
 import com.donnations.backend.http.dto.ErrorResponseDto
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
@@ -21,9 +23,17 @@ class GlobalExceptionHandler {
     fun handleNotFound(e: CampaignNotFoundException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.NOT_FOUND, e.message.orEmpty(), e.errorCode)
 
+    @ExceptionHandler(InvalidDonationAmountException::class)
+    fun handleInvalidDonationAmount(e: InvalidDonationAmountException): ResponseEntity<ErrorResponseDto> =
+        error(HttpStatus.BAD_REQUEST, e.message.orEmpty(), e.errorCode)
+
     @ExceptionHandler(CampaignEndedException::class)
     fun handleCampaignEnded(e: CampaignEndedException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.CONFLICT, e.message.orEmpty(), e.errorCode)
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleUnreadableBody(e: HttpMessageNotReadableException): ResponseEntity<ErrorResponseDto> =
+        error(HttpStatus.BAD_REQUEST, "Malformed request body", ErrorCode.INVALID_REQUEST)
 
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)
     fun handleTypeMismatch(e: MethodArgumentTypeMismatchException): ResponseEntity<ErrorResponseDto> =
