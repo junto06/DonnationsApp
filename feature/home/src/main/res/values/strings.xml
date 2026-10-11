@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Donnations</string>
+    <string name="home_error_load">Couldn\'t load campaigns. Please try again.</string>
+    <string name="home_campaigns_header">Campaigns</string>
+    <string name="home_retry">Retry</string>
+    <string name="home_donate_now">Donate Now</string>
+    <string name="home_category_all">All</string>
+    <string name="home_goal_of">of %1$s</string>
+</resources>

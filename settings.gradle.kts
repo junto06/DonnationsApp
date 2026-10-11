@@ -29,3 +29,12 @@ include(":core:base")
 include(":core:designsystem")
 include(":core:network:base")
 include(":core:network:impl")
+
+// Domain
+include(":domain:home")
+
+// Data
+include(":data:home")
+
+// Feature (presentation)
+include(":feature:home")

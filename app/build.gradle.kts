@@ -22,6 +22,9 @@ android {
 dependencies {
     implementation(projects.core.base)
     implementation(projects.core.designsystem)
+    implementation(projects.feature.home)
+    // data is only here so Hilt can assemble its bindings
+    implementation(projects.data.home)
 
     // Only the app sees network:impl; features compile against network:base
     implementation(projects.core.network.impl)
