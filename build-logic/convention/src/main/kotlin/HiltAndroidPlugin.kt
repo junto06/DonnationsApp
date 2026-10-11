@@ -13,6 +13,9 @@ class HiltAndroidPlugin : ConventionPlugin() {
         dependencies {
             "implementation"(libs.findLibrary("hilt-android").get())
             "ksp"(libs.findLibrary("hilt-compiler").get())
+            // hilt-android pulls annotation-experimental 1.4.x, whose lint check falsely flags @Serializable
+            // with InternalSerializationApi in the IDE (KTIJ-34986); 1.5.1+ fixes it.
+            "implementation"(libs.findLibrary("androidx-annotation-experimental").get())
         }
     }
 }

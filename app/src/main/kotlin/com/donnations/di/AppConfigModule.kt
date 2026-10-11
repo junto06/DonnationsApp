@@ -5,6 +5,7 @@ import com.donnations.BuildConfig
 import com.donnations.core.base.AppConfig
 import com.donnations.core.base.AppLanguage
 import com.donnations.core.base.Environment
+import com.donnations.core.base.LocaleHandler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,6 +29,9 @@ object AppConfigModule {
             AppLanguage.resolve(List(prefs.size()) { prefs[it] })
         },
     )
+
+    @Provides
+    fun provideLocaleHandler(appConfig: AppConfig): LocaleHandler = appConfig.localeHandler
 }
 
 private inline fun <reified T : Enum<T>> enumValueOrDefault(
