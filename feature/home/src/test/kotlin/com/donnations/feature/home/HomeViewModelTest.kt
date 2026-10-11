@@ -21,7 +21,7 @@ import java.util.Locale
 class HomeViewModelTest {
 
     private val repository = FakeHomeRepository()
-    private val viewModel by lazy { HomeViewModel(repository, HomeUiMapper { Locale.US }) }
+    private val viewModel by lazy { HomeViewModel(repository, HomeUiMapper({ Locale.US }, testStrings)) }
 
     @Before
     fun setUp() {

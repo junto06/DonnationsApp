@@ -1,8 +1,10 @@
 package com.donnations.feature.home.model
 
 import com.donnations.core.base.LocaleHandler
+import com.donnations.core.base.StringResolver
 import com.donnations.domain.home.model.Campaign
 import com.donnations.domain.home.model.Home
+import com.donnations.feature.home.R
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -12,13 +14,16 @@ import javax.inject.Inject
 
 class HomeUiMapper @Inject constructor(
     private val localeHandler: LocaleHandler,
+    private val strings: StringResolver,
 ) {
 
     fun map(home: Home): HomeUiModel {
         val locale = localeHandler.currentLocale()
         return HomeUiModel(
-            categories = listOf(CategoryUiModel(ALL_CATEGORY_ID, "All")) +
-                home.categories.map { CategoryUiModel(it.id, it.name) },
+            categories = buildList {
+                add(CategoryUiModel(ALL_CATEGORY_ID, strings.getString(R.string.home_category_all)))
+                home.categories.mapTo(this) { CategoryUiModel(it.id, it.name) }
+            },
             featured = home.featured.map { it.toUiModel(locale) },
             campaigns = home.campaigns.map { it.toUiModel(locale) },
         )
@@ -37,7 +42,7 @@ class HomeUiMapper @Inject constructor(
             location = location,
             imageUrl = imageUrl,
             raised = money.format(raised),
-            goal = "of ${money.format(goal)}",
+            goal = strings.getString(R.string.home_goal_of, money.format(goal)),
             percent = NumberFormat.getPercentInstance(locale).format(progress),
             progress = progress.toFloat(),
         )

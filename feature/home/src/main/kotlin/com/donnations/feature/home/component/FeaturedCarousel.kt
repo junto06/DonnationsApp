@@ -23,10 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.donnations.core.designsystem.component.RemoteImage
+import com.donnations.feature.home.R
 import com.donnations.feature.home.model.CampaignUiModel
 
 @Composable
@@ -89,7 +91,7 @@ private fun FeaturedCard(campaign: CampaignUiModel, onDonateClick: (String) -> U
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.small,
             ) {
-                Text("Donate Now")
+                Text(stringResource(R.string.home_donate_now))
             }
         }
     }

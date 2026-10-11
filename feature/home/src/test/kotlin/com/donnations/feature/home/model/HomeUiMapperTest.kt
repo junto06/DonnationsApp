@@ -2,13 +2,14 @@ package com.donnations.feature.home.model
 
 import com.donnations.feature.home.campaign
 import com.donnations.feature.home.home
+import com.donnations.feature.home.testStrings
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Locale
 
 class HomeUiMapperTest {
 
-    private fun mapper(locale: Locale = Locale.US) = HomeUiMapper { locale }
+    private fun mapper(locale: Locale = Locale.US) = HomeUiMapper({ locale }, testStrings)
 
     @Test
     fun `prepends All tab to categories`() {

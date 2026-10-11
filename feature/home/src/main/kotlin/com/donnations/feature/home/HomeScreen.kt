@@ -106,7 +106,7 @@ private fun HomeContent(
         if (home.campaigns.isNotEmpty()) {
             item(key = "campaigns-header") {
                 Text(
-                    text = "Campaigns",
+                    text = stringResource(R.string.home_campaigns_header),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -135,6 +135,6 @@ private fun ErrorContent(
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
-        Button(onClick = onRetry) { Text("Retry") }
+        Button(onClick = onRetry) { Text(stringResource(R.string.home_retry)) }
     }
 }

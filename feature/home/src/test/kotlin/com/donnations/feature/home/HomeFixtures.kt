@@ -1,5 +1,6 @@
 package com.donnations.feature.home
 
+import com.donnations.core.base.StringResolver
 import com.donnations.domain.home.model.Campaign
 import com.donnations.domain.home.model.Category
 import com.donnations.domain.home.model.Home
@@ -26,3 +27,12 @@ fun home() = Home(
     featured = listOf(campaign(id = "f1")),
     campaigns = listOf(campaign(id = "c1")),
 )
+
+// Mirrors res/values/strings.xml so mapper tests run on the JVM without Android resources.
+val testStrings = StringResolver { id, args ->
+    when (id) {
+        R.string.home_category_all -> "All"
+        R.string.home_goal_of -> "of %1\$s".format(*args)
+        else -> error("Unexpected string id $id")
+    }
+}
