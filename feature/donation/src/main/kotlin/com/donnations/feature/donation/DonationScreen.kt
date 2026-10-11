@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +49,7 @@ fun DonationRoute(
         onBack = onBack,
         onRetry = viewModel::retry,
         onAmountChange = viewModel::changeAmount,
+        onDonate = viewModel::donate,
     )
 }
 
@@ -56,6 +59,7 @@ fun DonationScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onAmountChange: (String) -> Unit,
+    onDonate: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -71,7 +75,8 @@ fun DonationScreen(
         when (uiState) {
             DonationUiState.Loading -> LoadingWheel(contentModifier)
             is DonationUiState.Error -> ErrorContent(uiState.message, uiState.retryable, onRetry, contentModifier)
-            is DonationUiState.Success -> DonationContent(uiState.donation, onAmountChange, contentModifier)
+            is DonationUiState.Success -> DonationContent(uiState.donation, onAmountChange, onDonate, contentModifier)
+            is DonationUiState.Donated -> DonatedContent(uiState.message, onDone = onBack, contentModifier)
         }
     }
 }
@@ -80,6 +85,7 @@ fun DonationScreen(
 private fun DonationContent(
     donation: DonationUiModel,
     onAmountChange: (String) -> Unit,
+    onDonate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -95,6 +101,7 @@ private fun DonationContent(
                 FilterChip(
                     selected = preset.selected,
                     onClick = { onAmountChange(preset.inputValue) },
+                    enabled = !donation.isSubmitting,
                     label = { Text(preset.label, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) },
                     modifier = Modifier.weight(1f),
                 )
@@ -106,21 +113,44 @@ private fun DonationContent(
             label = { Text(stringResource(R.string.donation_amount)) },
             prefix = { Text(donation.currencySymbol) },
             singleLine = true,
+            enabled = !donation.isSubmitting,
             isError = donation.amountError != null,
             supportingText = donation.amountError?.let { error -> { Text(error) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
         )
-        // Disabled until submit is wired to POST donations (backend PR 2; final async contract in PR 4).
-        Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.donation_donate))
-        }
-        Text(
-            stringResource(R.string.donation_coming_soon),
-            style = MaterialTheme.typography.bodySmall,
+        Button(
+            onClick = onDonate,
+            enabled = donation.amountToDonate != null && !donation.isSubmitting,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-        )
+        ) {
+            if (donation.isSubmitting) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text(stringResource(R.string.donation_donate))
+            }
+        }
+        donation.submitError?.let { error ->
+            Text(
+                error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DonatedContent(message: String, onDone: () -> Unit, modifier: Modifier) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(message, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.donation_done)) }
     }
 }
 
