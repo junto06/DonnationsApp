@@ -1,5 +1,6 @@
 package com.donnations.feature.campaign
 
+import com.donnations.core.model.CampaignId
 import com.donnations.core.base.StringResolver
 import com.donnations.domain.campaign.model.CampaignDetail
 import java.math.BigDecimal
@@ -11,7 +12,7 @@ fun campaignDetail(
     raised: String = "12450.00",
     donorCount: Int = 530,
 ) = CampaignDetail(
-    id = id,
+    id = CampaignId(id),
     title = "Medical Support",
     summary = "Mobile clinics",
     description = "Doctors and medicines for flood-hit villages.",

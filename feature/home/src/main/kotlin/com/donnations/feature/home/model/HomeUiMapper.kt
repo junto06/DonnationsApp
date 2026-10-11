@@ -40,7 +40,7 @@ class HomeUiMapper @Inject constructor(
         }
         val progress = if (goal.signum() == 0) BigDecimal.ZERO else raised.divide(goal, 4, RoundingMode.DOWN)
         return CampaignUiModel(
-            id = id,
+            id = id.value,
             title = title,
             summary = summary,
             location = location,
