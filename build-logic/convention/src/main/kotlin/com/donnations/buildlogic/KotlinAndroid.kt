@@ -5,6 +5,7 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -28,7 +29,13 @@ internal fun Project.configureKotlinAndroid(
         compileOptions.apply {
             sourceCompatibility = JavaVersion.toVersion(jdkVersion)
             targetCompatibility = JavaVersion.toVersion(jdkVersion)
+            // minSdk 24 lacks java.time (API 26); desugaring backports it so domain models can use Instant.
+            isCoreLibraryDesugaringEnabled = true
         }
+    }
+
+    dependencies {
+        "coreLibraryDesugaring"(libs.findLibrary("desugar-jdk-libs").get())
     }
 
     extensions.configure<KotlinAndroidProjectExtension> {

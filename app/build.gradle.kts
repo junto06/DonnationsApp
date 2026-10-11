@@ -23,8 +23,10 @@ dependencies {
     implementation(projects.core.base)
     implementation(projects.core.designsystem)
     implementation(projects.feature.home)
+    implementation(projects.feature.campaign)
     // data is only here so Hilt can assemble its bindings
     implementation(projects.data.home)
+    implementation(projects.data.campaign)
 
     // Only the app sees network:impl; features compile against network:base
     implementation(projects.core.network.impl)
@@ -32,4 +34,5 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
 }

@@ -32,9 +32,12 @@ include(":core:network:impl")
 
 // Domain
 include(":domain:home")
+include(":domain:campaign")
 
 // Data
 include(":data:home")
+include(":data:campaign")
 
 // Feature (presentation)
 include(":feature:home")
+include(":feature:campaign")

@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.donnations.core.designsystem.theme.DonnationsTheme
-import com.donnations.feature.home.HomeRoute
+import com.donnations.navigation.DonnationsNavHost
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DonnationsTheme {
-                HomeRoute()
+                DonnationsNavHost()
             }
         }
     }

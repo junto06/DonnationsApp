@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="campaign_detail_title">Campaign</string>
+    <string name="campaign_detail_back">Back</string>
+    <string name="campaign_detail_error_load">Couldn\'t load this campaign. Please try again.</string>
+    <string name="campaign_detail_retry">Retry</string>
+    <string name="campaign_detail_donate">Donate Now</string>
+    <string name="campaign_detail_organized_by">Organized by %1$s</string>
+    <string name="campaign_detail_ends">Ends %1$s</string>
+    <plurals name="campaign_detail_donors">
+        <item quantity="one">%1$d donor</item>
+        <item quantity="other">%1$d donors</item>
+    </plurals>
+    <string name="campaign_detail_goal_of">of %1$s</string>
+</resources>

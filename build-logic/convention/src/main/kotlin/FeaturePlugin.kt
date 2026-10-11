@@ -10,11 +10,14 @@ class FeaturePlugin : ConventionPlugin() {
             apply(libs.pluginId("donnations-android-library"))
             apply(libs.pluginId("donnations-android-compose"))
             apply(libs.pluginId("donnations-hilt"))
+            // Type-safe navigation: each feature owns its @Serializable destination.
+            apply(libs.pluginId("kotlin-serialization"))
         }
 
         dependencies {
             "implementation"(libs.findLibrary("androidx-lifecycle-runtime-compose").get())
             "implementation"(libs.findLibrary("androidx-lifecycle-viewmodel-compose").get())
+            "implementation"(libs.findLibrary("androidx-navigation-compose").get())
             "implementation"(libs.findLibrary("androidx-hilt-lifecycle-viewmodel-compose").get())
             "implementation"(libs.findLibrary("kotlinx-coroutines-android").get())
             
