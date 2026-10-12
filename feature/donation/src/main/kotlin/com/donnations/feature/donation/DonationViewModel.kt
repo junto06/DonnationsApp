@@ -3,7 +3,9 @@ package com.donnations.feature.donation
 import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.donnations.core.common.HasCoroutineExceptionHandler
+import com.donnations.core.common.launchReporting
+import com.donnations.core.common.viewModelReportingScope
 import com.donnations.core.model.CampaignId
 import com.donnations.core.model.DonationId
 import com.donnations.domain.donation.exception.CampaignEndedException
@@ -20,6 +22,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +32,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -40,7 +42,8 @@ class DonationViewModel @AssistedInject constructor(
     private val donateUseCase: DonateUseCase,
     mapper: DonationUiMapper,
     private val savedStateHandle: SavedStateHandle,
-) : ViewModel() {
+    override val exceptionHandler: CoroutineExceptionHandler,
+) : ViewModel(), HasCoroutineExceptionHandler {
 
     @AssistedFactory
     interface Factory {
@@ -49,7 +52,7 @@ class DonationViewModel @AssistedInject constructor(
 
     private val campaignId = CampaignId(campaignId)
     private val loadRequests = MutableStateFlow(0)
-    // Saved so the typed amount survives process death and a retry is one tap.
+    // Saved to survive process death.
     private val amount = savedStateHandle.getStateFlow(AMOUNT_KEY, "")
     private val submission = MutableStateFlow<DonationSubmission>(DonationSubmission.Idle)
 
@@ -66,12 +69,14 @@ class DonationViewModel @AssistedInject constructor(
                 .onStart { emit(DonationUiState.Loading) }
                 .catch { emit(it.toLoadErrorState()) }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DonationUiState.Loading)
+        .stateIn(viewModelReportingScope, SharingStarted.WhileSubscribed(5_000), DonationUiState.Loading)
 
     // Typing and tapping a preset both just set the amount; editing clears a previous submit error.
     fun changeAmount(text: String) {
-        // Clear the error first so no frame shows the new amount next to the old error.
-        if (submission.value is DonationSubmission.Failed) submission.value = DonationSubmission.Idle
+        if (submission.value is DonationSubmission.Failed) {
+            // Clear the error first so no frame shows the new amount next to the old error.
+            submission.value = DonationSubmission.Idle
+        }
         savedStateHandle[AMOUNT_KEY] = text
     }
 
@@ -80,9 +85,9 @@ class DonationViewModel @AssistedInject constructor(
         if (submission.value is DonationSubmission.Submitting) return
         val donationId = attemptIdFor(toDonate)
         submission.value = DonationSubmission.Submitting
-        viewModelScope.launch {
+        launchReporting {
             submission.value = try {
-                DonationSubmission.Done(donateUseCase(donationId, campaignId, toDonate)).also { clearAttempts() }
+                DonationSubmission.Done(donateUseCase(donationId, campaignId, toDonate)).also { clearAttempt(toDonate) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -91,8 +96,8 @@ class DonationViewModel @AssistedInject constructor(
         }
     }
 
-    // One idempotency key per amount among attempts not yet confirmed, so retrying an amount (even after editing
-    // away and back, or after process death) reuses its key and can't double-charge. All cleared on success.
+    // One idempotency key per unconfirmed amount, kept across process death, so a retry can't double-charge.
+    // A success clears only its own amount.
     private fun attemptIdFor(amount: BigDecimal): DonationId {
         val key = amount.stripTrailingZeros().toPlainString()
         val attempts = savedStateHandle.get<HashMap<String, String>>(ATTEMPTS_KEY) ?: HashMap()
@@ -103,8 +108,14 @@ class DonationViewModel @AssistedInject constructor(
         }
     }
 
-    private fun clearAttempts() {
-        savedStateHandle.remove<HashMap<String, String>>(ATTEMPTS_KEY)
+    private fun clearAttempt(amount: BigDecimal) {
+        val attempts = savedStateHandle.get<HashMap<String, String>>(ATTEMPTS_KEY) ?: return
+        attempts.remove(amount.stripTrailingZeros().toPlainString())
+        if (attempts.isEmpty()) {
+            savedStateHandle.remove<HashMap<String, String>>(ATTEMPTS_KEY)
+        } else {
+            savedStateHandle[ATTEMPTS_KEY] = attempts
+        }
     }
 
     fun retry() {

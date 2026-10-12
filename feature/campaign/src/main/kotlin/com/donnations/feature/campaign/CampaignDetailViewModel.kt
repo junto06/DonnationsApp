@@ -1,7 +1,8 @@
 package com.donnations.feature.campaign
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.donnations.core.common.HasCoroutineExceptionHandler
+import com.donnations.core.common.viewModelReportingScope
 import com.donnations.core.model.CampaignId
 import com.donnations.domain.campaign.repository.CampaignRepository
 import com.donnations.feature.campaign.model.CampaignDetailUiMapper
@@ -9,6 +10,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +27,8 @@ class CampaignDetailViewModel @AssistedInject constructor(
     @Assisted campaignId: String,
     repository: CampaignRepository,
     mapper: CampaignDetailUiMapper,
-) : ViewModel() {
+    override val exceptionHandler: CoroutineExceptionHandler,
+) : ViewModel(), HasCoroutineExceptionHandler {
 
     @AssistedFactory
     interface Factory {
@@ -42,7 +45,7 @@ class CampaignDetailViewModel @AssistedInject constructor(
                 .catch { emit(CampaignDetailUiState.Error(R.string.campaign_detail_error_load)) }
         }
         .stateIn(
-            viewModelScope,
+            viewModelReportingScope,
             SharingStarted.WhileSubscribed(5_000),
             CampaignDetailUiState.Loading
         )

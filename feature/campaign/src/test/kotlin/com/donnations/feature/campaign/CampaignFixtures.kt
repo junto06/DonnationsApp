@@ -1,7 +1,7 @@
 package com.donnations.feature.campaign
 
-import com.donnations.core.model.CampaignId
 import com.donnations.core.base.StringResolver
+import com.donnations.core.model.CampaignId
 import com.donnations.domain.campaign.model.CampaignDetail
 import java.math.BigDecimal
 import java.time.Instant

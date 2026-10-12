@@ -2,6 +2,7 @@ package com.donnations.feature.home
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.donnations.core.base.testExceptionHandler
 import com.donnations.domain.home.model.Home
 import com.donnations.domain.home.repository.HomeRepository
 import com.donnations.feature.home.model.HomeUiMapper
@@ -22,7 +23,7 @@ import java.util.Locale
 class HomeViewModelTest {
 
     private val repository = FakeHomeRepository()
-    private val viewModel by lazy { HomeViewModel(repository, HomeUiMapper({ Locale.US }, testStrings), SavedStateHandle()) }
+    private val viewModel by lazy { HomeViewModel(repository, HomeUiMapper({ Locale.US }, testStrings), SavedStateHandle(), testExceptionHandler) }
 
     @Before
     fun setUp() {

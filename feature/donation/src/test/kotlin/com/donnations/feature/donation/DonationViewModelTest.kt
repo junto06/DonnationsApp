@@ -2,6 +2,7 @@ package com.donnations.feature.donation
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.donnations.core.base.testExceptionHandler
 import com.donnations.core.model.CampaignId
 import com.donnations.core.model.DonationId
 import com.donnations.domain.donation.exception.CampaignEndedException
@@ -41,6 +42,7 @@ class DonationViewModelTest {
         donateUseCase = DonateUseCase(repository),
         mapper = DonationUiMapper({ locale }, testStrings),
         savedStateHandle = savedState,
+        exceptionHandler = testExceptionHandler,
     )
 
     // What Android hands a recreated view model after process death: the saved values, nothing else.
@@ -319,6 +321,21 @@ class DonationViewModelTest {
             assertTrue(a != b)
             assertEquals(a, aAgain)
         }
+
+    @Test
+    fun `a success clears only its own amount, keeping other unconfirmed attempts`() = runTest {
+        val savedState = SavedStateHandle(mapOf("attempts" to hashMapOf("25" to "pending-25")))
+        val viewModel = viewModel(savedState = savedState)
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.changeAmount("30")
+            expectMostRecentItem()
+            viewModel.donate()
+            assertTrue(expectMostRecentItem() is DonationUiState.Donated)
+        }
+
+        assertEquals(mapOf("25" to "pending-25"), savedState.get<HashMap<String, String>>("attempts"))
+    }
 
     @Test
     fun `a successful donation clears the saved attempt so the next one gets a new id`() = runTest {

@@ -10,3 +10,8 @@ interface Logger {
     // Non-fatal or fatal exceptions worth reporting (crash reporter hooks in here).
     fun recordException(throwable: Throwable, message: String? = null)
 }
+
+// Implement it to call logged {} without with(logger) { }.
+interface HasLogger {
+    val logger: Logger
+}

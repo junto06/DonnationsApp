@@ -11,4 +11,9 @@ android {
 dependencies {
     implementation(projects.domain.campaign)
     implementation(projects.core.network.base)
+    implementation(projects.core.base)
+
+    testImplementation(libs.junit)
+    testImplementation(testFixtures(projects.core.base))
+    testImplementation(libs.kotlinx.coroutines.test)
 }

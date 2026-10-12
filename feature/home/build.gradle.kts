@@ -11,4 +11,7 @@ dependencies {
     implementation(projects.domain.home)
     implementation(projects.core.designsystem)
     implementation(projects.core.base)
+    implementation(projects.core.common)
+
+    testImplementation(testFixtures(projects.core.base))
 }
