@@ -1,6 +1,8 @@
 package com.donnations.feature.donation
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import com.donnations.core.base.testExceptionHandler
 import com.donnations.core.model.CampaignId
 import com.donnations.core.model.DonationId
 import com.donnations.domain.donation.exception.CampaignEndedException
@@ -26,6 +28,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.math.BigDecimal
 import java.util.Locale
 
@@ -33,12 +36,17 @@ class DonationViewModelTest {
 
     private val repository = FakeDonationRepository()
 
-    private fun viewModel(locale: Locale = Locale.US) = DonationViewModel(
+    private fun viewModel(locale: Locale = Locale.US, savedState: SavedStateHandle = SavedStateHandle()) = DonationViewModel(
         campaignId = "c1",
         repository = repository,
         donateUseCase = DonateUseCase(repository),
         mapper = DonationUiMapper({ locale }, testStrings),
+        savedStateHandle = savedState,
+        exceptionHandler = testExceptionHandler,
     )
+
+    // What Android hands a recreated view model after process death: the saved values, nothing else.
+    private fun SavedStateHandle.afterProcessDeath() = SavedStateHandle(keys().associateWith { get<Any>(it) })
 
     @Before
     fun setUp() {
@@ -257,6 +265,91 @@ class DonationViewModelTest {
                 (expectMostRecentItem() as DonationUiState.Success).donation.submitError,
             )
         }
+    }
+
+    @Test
+    fun `after process death the amount is restored and a retry reuses the same donation id`() = runTest {
+        repository.submitFailure = IOException("killed mid-request")
+        val savedState = SavedStateHandle()
+        val before = viewModel(savedState = savedState)
+        before.uiState.test {
+            awaitItem()
+            before.changeAmount("25")
+            awaitItem()
+            before.donate()
+            expectMostRecentItem()
+        }
+
+        repository.submitFailure = null
+        val after = viewModel(savedState = savedState.afterProcessDeath())
+        after.uiState.test {
+            assertEquals("25", (awaitItem() as DonationUiState.Success).donation.amount)
+            after.donate()
+            assertTrue(expectMostRecentItem() is DonationUiState.Donated)
+        }
+
+        val (first, retry) = repository.donationIds
+        assertEquals(first, retry)
+    }
+
+    @Test
+    fun `each unconfirmed amount keeps its own id, so editing away and back reuses it, even after process death`() =
+        runTest {
+            repository.submitFailure = IOException("response lost")
+            val savedState = SavedStateHandle()
+            val before = viewModel(savedState = savedState)
+            before.uiState.test {
+                awaitItem()
+                listOf("25", "30").forEach { amount ->
+                    before.changeAmount(amount)
+                    expectMostRecentItem()
+                    before.donate()
+                    expectMostRecentItem()
+                }
+            }
+
+            val after = viewModel(savedState = savedState.afterProcessDeath())
+            after.uiState.test {
+                awaitItem()
+                after.changeAmount("25.00")
+                expectMostRecentItem()
+                after.donate()
+                expectMostRecentItem()
+            }
+
+            val (a, b, aAgain) = repository.donationIds
+            assertTrue(a != b)
+            assertEquals(a, aAgain)
+        }
+
+    @Test
+    fun `a success clears only its own amount, keeping other unconfirmed attempts`() = runTest {
+        val savedState = SavedStateHandle(mapOf("attempts" to hashMapOf("25" to "pending-25")))
+        val viewModel = viewModel(savedState = savedState)
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.changeAmount("30")
+            expectMostRecentItem()
+            viewModel.donate()
+            assertTrue(expectMostRecentItem() is DonationUiState.Donated)
+        }
+
+        assertEquals(mapOf("25" to "pending-25"), savedState.get<HashMap<String, String>>("attempts"))
+    }
+
+    @Test
+    fun `a successful donation clears the saved attempt so the next one gets a new id`() = runTest {
+        val savedState = SavedStateHandle()
+        val viewModel = viewModel(savedState = savedState)
+        viewModel.uiState.test {
+            awaitItem()
+            viewModel.changeAmount("25")
+            awaitItem()
+            viewModel.donate()
+            expectMostRecentItem()
+        }
+
+        assertTrue(savedState.keys().none { it.startsWith("attempt") })
     }
 
     @Test

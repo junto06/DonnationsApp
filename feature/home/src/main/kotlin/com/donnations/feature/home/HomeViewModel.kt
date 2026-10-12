@@ -2,10 +2,12 @@ package com.donnations.feature.home
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.donnations.core.common.HasCoroutineExceptionHandler
+import com.donnations.core.common.viewModelReportingScope
 import com.donnations.domain.home.repository.HomeRepository
 import com.donnations.feature.home.model.HomeUiMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,8 @@ class HomeViewModel @Inject constructor(
     repository: HomeRepository,
     mapper: HomeUiMapper,
     private val savedStateHandle: SavedStateHandle,
-) : ViewModel() {
+    override val exceptionHandler: CoroutineExceptionHandler,
+) : ViewModel(), HasCoroutineExceptionHandler {
 
     private val loadRequests = MutableStateFlow(0)
     private val selectedCategoryId = savedStateHandle.getStateFlow(SELECTED_CATEGORY_KEY, HomeUiMapper.ALL_CATEGORY_ID)
@@ -37,7 +40,7 @@ class HomeViewModel @Inject constructor(
                 .catch { emit(HomeUiState.Error(R.string.home_error_load)) }
         }
         .stateIn(
-            viewModelScope,
+            viewModelReportingScope,
             SharingStarted.WhileSubscribed(5_000),
             HomeUiState.Loading
         )

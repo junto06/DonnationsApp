@@ -10,5 +10,8 @@ android {
 dependencies {
     implementation(projects.domain.donation)
     implementation(projects.core.base)
+    implementation(projects.core.common)
     implementation(projects.core.designsystem)
+
+    testImplementation(testFixtures(projects.core.base))
 }

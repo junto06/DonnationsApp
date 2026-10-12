@@ -1,7 +1,7 @@
 package com.donnations.feature.home
 
-import com.donnations.core.model.CampaignId
 import com.donnations.core.base.StringResolver
+import com.donnations.core.model.CampaignId
 import com.donnations.domain.home.model.Campaign
 import com.donnations.domain.home.model.Category
 import com.donnations.domain.home.model.Home

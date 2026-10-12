@@ -1,5 +1,8 @@
 package com.donnations.data.home.repository
 
+import com.donnations.core.base.HasLogger
+import com.donnations.core.base.Logger
+import com.donnations.core.base.logged
 import com.donnations.data.home.remote.HomeApi
 import com.donnations.data.home.remote.toDomain
 import com.donnations.domain.home.model.Home
@@ -10,6 +13,13 @@ import javax.inject.Inject
 
 class HomeRepositoryImpl @Inject constructor(
     private val api: HomeApi,
-) : HomeRepository {
-    override fun getHome(): Flow<Home> = flow { emit(api.getHome().toDomain()) }
+    override val logger: Logger,
+) : HomeRepository, HasLogger {
+    override fun getHome(): Flow<Home> =
+        flow {
+            val home = logged("Loading home") {
+                api.getHome().toDomain()
+            }
+            emit(home)
+        }
 }

@@ -1,8 +1,11 @@
 package com.donnations.feature.donation
 
 import androidx.annotation.StringRes
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.donnations.core.common.HasCoroutineExceptionHandler
+import com.donnations.core.common.launchReporting
+import com.donnations.core.common.viewModelReportingScope
 import com.donnations.core.model.CampaignId
 import com.donnations.core.model.DonationId
 import com.donnations.domain.donation.exception.CampaignEndedException
@@ -19,6 +22,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +32,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -38,7 +41,9 @@ class DonationViewModel @AssistedInject constructor(
     repository: DonationRepository,
     private val donateUseCase: DonateUseCase,
     mapper: DonationUiMapper,
-) : ViewModel() {
+    private val savedStateHandle: SavedStateHandle,
+    override val exceptionHandler: CoroutineExceptionHandler,
+) : ViewModel(), HasCoroutineExceptionHandler {
 
     @AssistedFactory
     interface Factory {
@@ -47,12 +52,9 @@ class DonationViewModel @AssistedInject constructor(
 
     private val campaignId = CampaignId(campaignId)
     private val loadRequests = MutableStateFlow(0)
-    private val amount = MutableStateFlow("")
+    // Saved to survive process death.
+    private val amount = savedStateHandle.getStateFlow(AMOUNT_KEY, "")
     private val submission = MutableStateFlow<DonationSubmission>(DonationSubmission.Idle)
-
-    // Idempotency key of the attempt still awaiting confirmation; retrying it (same amount) can't double-charge.
-    // Cleared on success, so any later donation, even of the same amount, gets a new key and counts again.
-    private var attempt: Pair<BigDecimal, DonationId>? = null
 
     val uiState: StateFlow<DonationUiState> = loadRequests
         .flatMapLatest {
@@ -67,29 +69,52 @@ class DonationViewModel @AssistedInject constructor(
                 .onStart { emit(DonationUiState.Loading) }
                 .catch { emit(it.toLoadErrorState()) }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DonationUiState.Loading)
+        .stateIn(viewModelReportingScope, SharingStarted.WhileSubscribed(5_000), DonationUiState.Loading)
 
     // Typing and tapping a preset both just set the amount; editing clears a previous submit error.
     fun changeAmount(text: String) {
-        // Clear the error first so no frame shows the new amount next to the old error.
-        if (submission.value is DonationSubmission.Failed) submission.value = DonationSubmission.Idle
-        amount.value = text
+        if (submission.value is DonationSubmission.Failed) {
+            // Clear the error first so no frame shows the new amount next to the old error.
+            submission.value = DonationSubmission.Idle
+        }
+        savedStateHandle[AMOUNT_KEY] = text
     }
 
     fun donate() {
         val toDonate = (uiState.value as? DonationUiState.Success)?.donation?.amountToDonate ?: return
         if (submission.value is DonationSubmission.Submitting) return
-        val donationId = attempt?.takeIf { (amount, _) -> amount.compareTo(toDonate) == 0 }?.second
-            ?: DonationId(UUID.randomUUID().toString()).also { attempt = toDonate to it }
+        val donationId = attemptIdFor(toDonate)
         submission.value = DonationSubmission.Submitting
-        viewModelScope.launch {
+        launchReporting {
             submission.value = try {
-                DonationSubmission.Done(donateUseCase(donationId, campaignId, toDonate)).also { attempt = null }
+                DonationSubmission.Done(donateUseCase(donationId, campaignId, toDonate)).also { clearAttempt(toDonate) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 DonationSubmission.Failed(e.toSubmitErrorMessage())
             }
+        }
+    }
+
+    // One idempotency key per unconfirmed amount, kept across process death, so a retry can't double-charge.
+    // A success clears only its own amount.
+    private fun attemptIdFor(amount: BigDecimal): DonationId {
+        val key = amount.stripTrailingZeros().toPlainString()
+        val attempts = savedStateHandle.get<HashMap<String, String>>(ATTEMPTS_KEY) ?: HashMap()
+        attempts[key]?.takeIf { it.isNotBlank() }?.let { return DonationId(it) }
+        return DonationId(UUID.randomUUID().toString()).also {
+            attempts[key] = it.value
+            savedStateHandle[ATTEMPTS_KEY] = attempts
+        }
+    }
+
+    private fun clearAttempt(amount: BigDecimal) {
+        val attempts = savedStateHandle.get<HashMap<String, String>>(ATTEMPTS_KEY) ?: return
+        attempts.remove(amount.stripTrailingZeros().toPlainString())
+        if (attempts.isEmpty()) {
+            savedStateHandle.remove<HashMap<String, String>>(ATTEMPTS_KEY)
+        } else {
+            savedStateHandle[ATTEMPTS_KEY] = attempts
         }
     }
 
@@ -127,5 +152,10 @@ class DonationViewModel @AssistedInject constructor(
         }
 
         else -> R.string.donation_error_submit
+    }
+
+    private companion object {
+        const val AMOUNT_KEY = "amount"
+        const val ATTEMPTS_KEY = "attempts"
     }
 }

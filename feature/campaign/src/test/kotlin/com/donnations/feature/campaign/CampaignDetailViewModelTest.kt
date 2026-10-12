@@ -1,6 +1,7 @@
 package com.donnations.feature.campaign
 
 import app.cash.turbine.test
+import com.donnations.core.base.testExceptionHandler
 import com.donnations.core.model.CampaignId
 import com.donnations.domain.campaign.model.CampaignDetail
 import com.donnations.domain.campaign.repository.CampaignRepository
@@ -27,6 +28,7 @@ class CampaignDetailViewModelTest {
             campaignId = "c1",
             repository = repository,
             mapper = CampaignDetailUiMapper({ Locale.US }, testStrings),
+            exceptionHandler = testExceptionHandler,
         )
     }
 

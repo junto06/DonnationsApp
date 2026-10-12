@@ -1,5 +1,6 @@
 package com.donnations.data.donation.repository
 
+import com.donnations.core.base.RecordingLogger
 import com.donnations.core.model.CampaignId
 import com.donnations.core.model.DonationId
 import com.donnations.data.donation.remote.DonationApi
@@ -20,6 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
+import java.io.IOException
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -27,7 +29,8 @@ class DonationRepositoryImplTest {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val api = FakeApi()
-    private val repository = DonationRepositoryImpl(api, json)
+    private val logger = RecordingLogger()
+    private val repository = DonationRepositoryImpl(api, json, logger)
     private val id = DonationId("d1")
 
     @Test
@@ -116,6 +119,20 @@ class DonationRepositoryImplTest {
     fun `other errors propagate unchanged, including bugs like a malformed request`() = runTest {
         assertEquals(400, (failureFor(400, "1002") as HttpException).code())
         assertEquals(500, (failureFor(500, body = "not json") as HttpException).code())
+    }
+
+    @Test
+    fun `reports unmapped failures but not backend rejections or connectivity`() = runTest {
+        failureFor(409, "1006")
+        assertEquals(emptyList<Throwable>(), logger.recorded)
+
+        failureFor(400, "1002")
+        assertEquals(1, logger.recorded.size)
+
+        logger.recorded.clear()
+        api.httpFailure = IOException("offline")
+        runCatching { repository.submitDonation(id, CampaignId("c1"), BigDecimal.TEN) }
+        assertEquals(emptyList<Throwable>(), logger.recorded)
     }
 
     private suspend fun failureFor(code: Int, errorCode: String = "", body: String? = null): Throwable {
