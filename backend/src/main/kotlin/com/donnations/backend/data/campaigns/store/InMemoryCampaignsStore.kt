@@ -35,6 +35,7 @@ class InMemoryCampaignsStore(
         }?.campaign
 }
 
+// Seeded picsum.photos URLs: stable placeholder photos (same image per seed) until real campaign images exist.
 private val seedCampaigns = listOf(
     Campaign(
         id = CampaignId(UUID.fromString("3f1c2a5e-8d4b-4f0a-9c6e-1a2b3c4d5e01")),
@@ -44,7 +45,7 @@ private val seedCampaigns = listOf(
         organizer = "WaterBridge Foundation",
         location = "Sindh, Pakistan",
         categoryId = SeedCategoryIds.water,
-        imageUrl = "https://images.donnations.com/campaigns/clean-water.jpg",
+        imageUrl = "https://picsum.photos/seed/donnations-clean-water/800/600",
         goal = Money(5_000_000, Currency.EUR),
         raised = Money(3_275_000, Currency.EUR),
         donorCount = 412,
@@ -60,7 +61,7 @@ private val seedCampaigns = listOf(
         organizer = "ReadTogether",
         location = "Nairobi, Kenya",
         categoryId = SeedCategoryIds.education,
-        imageUrl = "https://images.donnations.com/campaigns/books.jpg",
+        imageUrl = "https://picsum.photos/seed/donnations-books/800/600",
         goal = Money(2_000_000, Currency.EUR),
         raised = Money(640_000, Currency.EUR),
         donorCount = 158,
@@ -76,7 +77,7 @@ private val seedCampaigns = listOf(
         organizer = "Relief Now",
         location = "Punjab, Pakistan",
         categoryId = SeedCategoryIds.emergency,
-        imageUrl = "https://images.donnations.com/campaigns/flood-relief.jpg",
+        imageUrl = "https://picsum.photos/seed/donnations-flood-relief/800/600",
         goal = Money(10_000_000, Currency.EUR),
         raised = Money(8_910_000, Currency.EUR),
         donorCount = 2_031,
@@ -92,7 +93,7 @@ private val seedCampaigns = listOf(
         organizer = "Hope Schools Trust",
         location = "Lahore, Pakistan",
         categoryId = SeedCategoryIds.education,
-        imageUrl = "https://images.donnations.com/campaigns/back-to-school.jpg",
+        imageUrl = "https://picsum.photos/seed/donnations-back-to-school/800/600",
         goal = Money(800_000, Currency.EUR),
         raised = Money(395_000, Currency.EUR),
         donorCount = 120,
@@ -108,7 +109,7 @@ private val seedCampaigns = listOf(
         organizer = "Care Clinics",
         location = "Karachi, Pakistan",
         categoryId = SeedCategoryIds.health,
-        imageUrl = "https://images.donnations.com/campaigns/medical-support.jpg",
+        imageUrl = "https://picsum.photos/seed/donnations-medical-support/800/600",
         goal = Money(2_000_000, Currency.EUR),
         raised = Money(1_245_000, Currency.EUR),
         donorCount = 530,
@@ -124,7 +125,7 @@ private val seedCampaigns = listOf(
         organizer = "Warm Hearts",
         location = "Gaziantep, Turkey",
         categoryId = SeedCategoryIds.emergency,
-        imageUrl = "https://images.donnations.com/campaigns/winter-relief.jpg",
+        imageUrl = "https://picsum.photos/seed/donnations-winter-relief/800/600",
         goal = Money(1_000_000, Currency.EUR),
         raised = Money(821_000, Currency.EUR),
         donorCount = 960,

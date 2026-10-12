@@ -15,9 +15,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.donnations.core.designsystem.component.BackButton
 import com.donnations.core.designsystem.component.LoadingWheel
 import com.donnations.feature.donation.model.DonationUiModel
 
@@ -66,7 +68,7 @@ fun DonationScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.donation_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Text(stringResource(R.string.donation_back)) }
+                    BackButton(onClick = onBack, contentDescription = stringResource(R.string.donation_back))
                 },
             )
         },
@@ -123,10 +125,23 @@ private fun DonationContent(
         Button(
             onClick = onDonate,
             enabled = donation.amountToDonate != null && !donation.isSubmitting,
+            // While submitting the button is disabled (no second tap) but keeps its colors, so the spinner stays visible.
+            colors = if (donation.isSubmitting) {
+                ButtonDefaults.buttonColors(
+                    disabledContainerColor = MaterialTheme.colorScheme.primary,
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                ButtonDefaults.buttonColors()
+            },
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (donation.isSubmitting) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = LocalContentColor.current,
+                    strokeWidth = 2.dp,
+                )
             } else {
                 Text(stringResource(R.string.donation_donate))
             }
