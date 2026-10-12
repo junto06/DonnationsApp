@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.donnations.android.library)
     alias(libs.plugins.donnations.hilt)
+    alias(libs.plugins.donnations.android.room)
     alias(libs.plugins.kotlin.serialization)
 }
 

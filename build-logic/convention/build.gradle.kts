@@ -19,6 +19,7 @@ dependencies {
     compileOnly(libs.compose.compiler.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
     compileOnly(libs.hilt.gradlePlugin)
+    compileOnly(libs.room.gradlePlugin)
 }
 
 gradlePlugin {
@@ -46,6 +47,10 @@ gradlePlugin {
         register("hilt") {
             id = libs.plugins.donnations.hilt.get().pluginId
             implementationClass = "HiltAndroidPlugin"
+        }
+        register("androidRoom") {
+            id = libs.plugins.donnations.android.room.get().pluginId
+            implementationClass = "RoomPlugin"
         }
     }
 }
