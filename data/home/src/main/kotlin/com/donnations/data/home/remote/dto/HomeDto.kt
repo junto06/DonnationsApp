@@ -28,4 +28,6 @@ data class CampaignDto(
     @SerialName("currency") val currency: String,
     @SerialName("goal") val goal: String,
     @SerialName("raised") val raised: String,
+    @SerialName("donorCount") val donorCount: Int,
+    @SerialName("endsAt") val endsAt: String,
 )
