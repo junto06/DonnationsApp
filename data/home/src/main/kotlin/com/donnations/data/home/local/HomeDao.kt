@@ -17,15 +17,15 @@ abstract class HomeDao {
     @Transaction
     open suspend fun load(): StoredHome? {
         val snapshot = snapshot() ?: return null
-        return StoredHome(snapshot, categories(), campaigns())
+        return StoredHome(snapshot, categories(), entries())
     }
 
     @Transaction
     open suspend fun replace(home: StoredHome) {
         deleteCategories()
-        deleteCampaigns()
+        deleteEntries()
         insertCategories(home.categories)
-        insertCampaigns(home.campaigns)
+        insertEntries(home.entries)
         upsertSnapshot(home.snapshot)
     }
 
@@ -38,8 +38,8 @@ abstract class HomeDao {
     @Query("SELECT * FROM categories ORDER BY position")
     abstract suspend fun categories(): List<CategoryEntity>
 
-    @Query("SELECT * FROM campaigns ORDER BY section, position")
-    abstract suspend fun campaigns(): List<CampaignEntity>
+    @Query("SELECT * FROM home_entries ORDER BY section, position")
+    abstract suspend fun entries(): List<HomeEntryEntity>
 
     @Upsert
     abstract suspend fun upsertSnapshot(snapshot: HomeSnapshotEntity)
@@ -48,11 +48,11 @@ abstract class HomeDao {
     abstract suspend fun insertCategories(categories: List<CategoryEntity>)
 
     @Insert
-    abstract suspend fun insertCampaigns(campaigns: List<CampaignEntity>)
+    abstract suspend fun insertEntries(entries: List<HomeEntryEntity>)
 
     @Query("DELETE FROM categories")
     abstract suspend fun deleteCategories()
 
-    @Query("DELETE FROM campaigns")
-    abstract suspend fun deleteCampaigns()
+    @Query("DELETE FROM home_entries")
+    abstract suspend fun deleteEntries()
 }

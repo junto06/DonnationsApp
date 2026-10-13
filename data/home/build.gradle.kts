@@ -11,10 +11,12 @@ android {
 
 dependencies {
     implementation(projects.domain.home)
+    implementation(projects.data.campaignStore)
     implementation(projects.core.network.base)
     implementation(projects.core.base)
 
     testImplementation(libs.junit)
     testImplementation(testFixtures(projects.core.base))
+    testImplementation(testFixtures(projects.data.campaignStore))
     testImplementation(libs.kotlinx.coroutines.test)
 }

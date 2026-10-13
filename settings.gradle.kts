@@ -38,6 +38,7 @@ include(":domain:campaign")
 include(":domain:donation")
 
 // Data
+include(":data:campaign-store")
 include(":data:home")
 include(":data:campaign")
 include(":data:donation")

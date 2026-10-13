@@ -1,6 +1,5 @@
 package com.donnations.data.home.local
 
-import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -24,25 +23,17 @@ data class CategoryEntity(
 
 enum class HomeSection { FEATURED, CAMPAIGNS }
 
+// Which campaign goes where; the campaigns themselves are in the shared campaign store.
 // The same campaign can be in both sections, so rows are keyed by section and position.
-// goal/raised stay plain decimal strings to keep exact amounts.
-@Entity(tableName = "campaigns", primaryKeys = ["section", "position"])
-data class CampaignEntity(
+@Entity(tableName = "home_entries", primaryKeys = ["section", "position"])
+data class HomeEntryEntity(
     val section: HomeSection,
     val position: Int,
-    val id: String,
-    val title: String,
-    val summary: String,
-    val location: String,
-    val categoryId: String,
-    val imageUrl: String,
-    val currency: String,
-    val goal: String,
-    val raised: String,
+    val campaignId: String,
 )
 
 data class StoredHome(
-    @Embedded val snapshot: HomeSnapshotEntity,
+    val snapshot: HomeSnapshotEntity,
     val categories: List<CategoryEntity>,
-    val campaigns: List<CampaignEntity>,
+    val entries: List<HomeEntryEntity>,
 )
