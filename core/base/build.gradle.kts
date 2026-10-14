@@ -5,5 +5,6 @@ plugins {
 }
 
 dependencies {
+    api(projects.core.model)
     testFixturesImplementation(libs.kotlinx.coroutines.core)
 }

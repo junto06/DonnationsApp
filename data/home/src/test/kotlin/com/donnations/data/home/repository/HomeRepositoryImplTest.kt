@@ -29,16 +29,18 @@ class HomeRepositoryImplTest {
 
     @Test
     fun `nothing is stored before the first refresh`() = runTest {
-        assertNull(repository.observeHome().first())
+        api.failure = IOException("offline")
+
+        assertNull(load().content)
     }
 
     @Test
     fun `a refresh stores home with its sections, order, exact amounts and fetch time`() = runTest {
         api.response = api.response.copy(campaigns = listOf(campaignDto("c2"), campaignDto("c1")))
 
-        repository.refreshHome()
+        load()
 
-        val cached = repository.observeHome().first()!!
+        val cached = stored()
         assertEquals(listOf("education"), cached.value.categories.map { it.id })
         assertEquals(listOf("c1"), cached.value.featured.map { it.id.value })
         assertEquals(listOf("c2", "c1"), cached.value.campaigns.map { it.id.value })
@@ -50,9 +52,9 @@ class HomeRepositoryImplTest {
     fun `a home without campaigns is stored and shown empty`() = runTest {
         api.response = api.response.copy(featured = emptyList(), campaigns = emptyList())
 
-        repository.refreshHome()
+        load()
 
-        val home = repository.observeHome().first()!!.value
+        val home = stored().value
         assertEquals(listOf("education"), home.categories.map { it.id })
         assertEquals(emptyList<Any>(), home.featured + home.campaigns)
     }
@@ -61,14 +63,14 @@ class HomeRepositoryImplTest {
     fun `a campaign listed twice in a section shows once`() = runTest {
         api.response = api.response.copy(campaigns = listOf(campaignDto("c2"), campaignDto("c2"), campaignDto("c3")))
 
-        repository.refreshHome()
+        load()
 
-        assertEquals(listOf("c2", "c3"), repository.observeHome().first()!!.value.campaigns.map { it.id.value })
+        assertEquals(listOf("c2", "c3"), stored().value.campaigns.map { it.id.value })
     }
 
     @Test
     fun `stores campaigns in the shared store for other screens`() = runTest {
-        repository.refreshHome()
+        load()
 
         val stored = campaignDao.rows.value.getValue("c1")
         assertEquals(960, stored.donorCount)
@@ -78,11 +80,11 @@ class HomeRepositoryImplTest {
 
     @Test
     fun `a refresh keeps the description and organizer detail already stored`() = runTest {
-        repository.refreshHome()
+        load()
         campaignDao.upsertCampaign(campaignDao.rows.value.getValue("c1").copy(description = "Long text", organizer = "Care"))
         api.response = api.response.copy(featured = listOf(campaignDto("c1").copy(raised = "9000.00")))
 
-        repository.refreshHome()
+        load()
 
         val stored = campaignDao.rows.value.getValue("c1")
         assertEquals("9000.00", stored.raised)
@@ -91,34 +93,42 @@ class HomeRepositoryImplTest {
     }
 
     @Test
-    fun `a failed refresh rethrows and keeps the stored copy`() = runTest {
-        repository.refreshHome()
+    fun `a failed refresh reports the error and keeps the stored copy`() = runTest {
+        load()
         val offline = IOException("offline")
         api.failure = offline
 
-        assertSame(offline, runCatching { repository.refreshHome() }.exceptionOrNull())
-        assertEquals(listOf("c1"), repository.observeHome().first()!!.value.featured.map { it.id.value })
+        val settled = load()
+
+        assertSame(offline, settled.error)
+        assertEquals(listOf("c1"), stored().value.featured.map { it.id.value })
     }
 
     @Test
     fun `a malformed response is reported and never replaces the stored copy`() = runTest {
-        repository.refreshHome()
+        load()
         api.response = api.response.copy(campaigns = listOf(campaignDto("c9").copy(goal = "not a number")))
 
-        val failure = runCatching { repository.refreshHome() }.exceptionOrNull()
+        val failure = load().error
 
         assertEquals(listOf(failure), logger.recorded)
-        assertEquals(listOf("c2"), repository.observeHome().first()!!.value.campaigns.map { it.id.value })
+        assertEquals(listOf("c2"), stored().value.campaigns.map { it.id.value })
     }
 
     @Test
     fun `does not report connectivity failures`() = runTest {
         api.failure = IOException("offline")
 
-        runCatching { repository.refreshHome() }
+        load()
 
         assertEquals(emptyList<Throwable>(), logger.recorded)
     }
+
+    // Collects until the backend refresh settles (each collection fetches once).
+    private suspend fun load() = repository.getHome().first { !it.loading }
+
+    // What's stored now; the fetch this triggers is harmless in these tests.
+    private suspend fun stored() = load().content!!
 
     private class FakeApi : HomeApi {
         var failure: Throwable? = null

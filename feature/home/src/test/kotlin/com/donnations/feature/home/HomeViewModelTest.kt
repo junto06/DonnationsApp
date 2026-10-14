@@ -4,13 +4,15 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.donnations.core.base.testExceptionHandler
 import com.donnations.core.model.Cached
+import com.donnations.core.model.Data
 import com.donnations.domain.home.model.Home
 import com.donnations.domain.home.repository.HomeRepository
 import com.donnations.feature.home.model.HomeUiMapper
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -42,7 +44,6 @@ class HomeViewModelTest {
     @Test
     fun `shows the stored home while refreshing`() = runTest {
         repository.stored.value = Cached(home(), Instant.EPOCH)
-        repository.refreshGate = CompletableDeferred()
 
         viewModel.uiState.test {
             val state = awaitItem() as HomeUiState.Success
@@ -52,13 +53,10 @@ class HomeViewModelTest {
 
     @Test
     fun `shows loading until the first refresh stores home`() = runTest {
-        val gate = CompletableDeferred<Unit>()
-        repository.refreshGate = gate
-
         viewModel.uiState.test {
             assertEquals(HomeUiState.Loading, awaitItem())
 
-            gate.complete(Unit)
+            repository.stored.value = Cached(home(), Instant.EPOCH)
 
             assertTrue(awaitItem() is HomeUiState.Success)
         }
@@ -67,32 +65,33 @@ class HomeViewModelTest {
     @Test
     fun `keeps showing the stored home when the refresh fails`() = runTest {
         repository.stored.value = Cached(home(), Instant.EPOCH)
-        repository.failure = IOException("offline")
+        repository.error.value = IOException("offline")
 
         viewModel.uiState.test {
             assertTrue(awaitItem() is HomeUiState.Success)
-            assertEquals(1, repository.refreshes)
         }
     }
 
     @Test
-    fun `emits error when the refresh fails with nothing stored and recovers on retry`() = runTest {
-        repository.failure = IOException("offline")
+    fun `emits error when the refresh fails with nothing stored and retries by loading again`() = runTest {
+        repository.error.value = IOException("offline")
 
         viewModel.uiState.test {
-            assertTrue(awaitItem() is HomeUiState.Error)
+            assertEquals(HomeUiState.Error(R.string.home_error_load), awaitItem())
 
-            repository.failure = null
+            repository.error.value = null
+            repository.stored.value = Cached(home(), Instant.EPOCH)
             viewModel.retry()
 
-            // StateFlow may conflate the intermediate Loading.
-            val next = awaitItem().let { if (it == HomeUiState.Loading) awaitItem() else it }
-            assertTrue(next is HomeUiState.Success)
+            assertTrue(expectMostRecentItem() is HomeUiState.Success)
+            assertEquals(2, repository.loads)
         }
     }
 
     @Test
-    fun `selecting a category filters locally without refreshing again`() = runTest {
+    fun `selecting a category filters locally without loading again`() = runTest {
+        repository.stored.value = Cached(home(), Instant.EPOCH)
+
         viewModel.uiState.test {
             assertTrue(awaitItem() is HomeUiState.Success)
 
@@ -101,23 +100,17 @@ class HomeViewModelTest {
             val state = awaitItem() as HomeUiState.Success
             assertEquals("education", state.home.selectedCategoryId)
             assertEquals(listOf("c2"), state.home.campaigns.map { it.id })
-            assertEquals(1, repository.refreshes)
+            assertEquals(1, repository.loads)
         }
     }
 
+    // The offline-first logic itself is tested in core:base; this only feeds its result.
     private class FakeHomeRepository : HomeRepository {
         val stored = MutableStateFlow<Cached<Home>?>(null)
-        var failure: Throwable? = null
-        var refreshGate: CompletableDeferred<Unit>? = null
-        var refreshes = 0
+        val error = MutableStateFlow<Throwable?>(null)
+        var loads = 0
 
-        override fun observeHome(): Flow<Cached<Home>?> = stored
-
-        override suspend fun refreshHome() {
-            refreshes++
-            refreshGate?.await()
-            failure?.let { throw it }
-            stored.value = Cached(home(), Instant.EPOCH)
-        }
+        override fun getHome(): Flow<Data<Cached<Home>>> =
+            combine(stored, error) { stored, error -> Data(content = stored, error = error, loading = stored == null && error == null) }.onStart { loads++ }
     }
 }
