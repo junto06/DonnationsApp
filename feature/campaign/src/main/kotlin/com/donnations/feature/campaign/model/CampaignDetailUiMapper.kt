@@ -27,8 +27,8 @@ class CampaignDetailUiMapper @Inject constructor(
         return CampaignDetailUiModel(
             title = campaign.title,
             summary = campaign.summary,
-            description = campaign.description,
-            organizer = strings.getString(R.string.campaign_detail_organized_by, campaign.organizer),
+            description = campaign.description.ifBlank { null },
+            organizer = campaign.organizer.ifBlank { null }?.let { strings.getString(R.string.campaign_detail_organized_by, it) },
             location = campaign.location,
             imageUrl = campaign.imageUrl,
             raised = money.format(campaign.raised),

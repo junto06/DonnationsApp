@@ -2,13 +2,17 @@ package com.donnations.feature.campaign
 
 import app.cash.turbine.test
 import com.donnations.core.base.testExceptionHandler
+import com.donnations.core.model.Cached
+import com.donnations.core.model.Data
 import com.donnations.core.model.CampaignId
 import com.donnations.domain.campaign.model.CampaignDetail
 import com.donnations.domain.campaign.repository.CampaignRepository
 import com.donnations.feature.campaign.model.CampaignDetailUiMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -18,6 +22,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
+import java.time.Instant
 import java.util.Locale
 
 class CampaignDetailViewModelTest {
@@ -44,38 +50,59 @@ class CampaignDetailViewModelTest {
 
     @Test
     fun `loads the campaign from the navigation argument`() = runTest {
+        repository.stored.value = Cached(campaignDetail(), Instant.EPOCH)
+
         viewModel.uiState.test {
-            val state = awaitItem()
-            assertTrue(state is CampaignDetailUiState.Success)
-            assertEquals("Medical Support", (state as CampaignDetailUiState.Success).campaign.title)
+            val state = awaitItem() as CampaignDetailUiState.Success
+            assertEquals("Medical Support", state.campaign.title)
             assertEquals(listOf("c1"), repository.requestedIds)
         }
     }
 
     @Test
-    fun `emits error when loading fails and recovers on retry`() = runTest {
-        repository.failure = IllegalStateException("offline")
+    fun `keeps showing the stored campaign when the refresh fails`() = runTest {
+        repository.stored.value = Cached(campaignDetail(), Instant.EPOCH)
+        repository.error.value = IOException("offline")
+
+        viewModel.uiState.test {
+            assertTrue(awaitItem() is CampaignDetailUiState.Success)
+        }
+    }
+
+    @Test
+    fun `shows loading until the first refresh with nothing stored`() = runTest {
+        viewModel.uiState.test {
+            assertEquals(CampaignDetailUiState.Loading, awaitItem())
+
+            repository.stored.value = Cached(campaignDetail(), Instant.EPOCH)
+
+            assertTrue(awaitItem() is CampaignDetailUiState.Success)
+        }
+    }
+
+    @Test
+    fun `emits error when the refresh fails with nothing stored and retries by loading again`() = runTest {
+        repository.error.value = IOException("offline")
 
         viewModel.uiState.test {
             assertEquals(CampaignDetailUiState.Error(R.string.campaign_detail_error_load), awaitItem())
 
-            repository.failure = null
+            repository.error.value = null
+            repository.stored.value = Cached(campaignDetail(), Instant.EPOCH)
             viewModel.retry()
 
-            // StateFlow may conflate the intermediate Loading.
-            val next = awaitItem().let { if (it == CampaignDetailUiState.Loading) awaitItem() else it }
-            assertTrue(next is CampaignDetailUiState.Success)
+            assertTrue(expectMostRecentItem() is CampaignDetailUiState.Success)
+            assertEquals(listOf("c1", "c1"), repository.requestedIds)
         }
     }
 
+    // The offline-first logic itself is tested in core:base; this only feeds its result.
     private class FakeCampaignRepository : CampaignRepository {
-        var failure: Throwable? = null
+        val stored = MutableStateFlow<Cached<CampaignDetail>?>(null)
+        val error = MutableStateFlow<Throwable?>(null)
         val requestedIds = mutableListOf<String>()
 
-        override fun getCampaign(id: CampaignId): Flow<CampaignDetail> = flow {
-            requestedIds += id.value
-            failure?.let { throw it }
-            emit(campaignDetail(id = id.value))
-        }
+        override fun getCampaign(id: CampaignId): Flow<Data<Cached<CampaignDetail>>> =
+            combine(stored, error) { stored, error -> Data(content = stored, error = error, loading = stored == null && error == null) }.onStart { requestedIds += id.value }
     }
 }

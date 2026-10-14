@@ -98,9 +98,9 @@ private fun CampaignContent(campaign: CampaignDetailUiModel, onDonate: () -> Uni
                 FundingProgress(campaign.raised, campaign.goal, campaign.percent, campaign.progress, amountsAboveBar = true)
                 Text(campaign.donorCount, style = MaterialTheme.typography.bodyMedium)
                 Text(campaign.endsAt, style = MaterialTheme.typography.bodyMedium)
-                Text(campaign.organizer, style = MaterialTheme.typography.bodyMedium)
+                campaign.organizer?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                 Text(campaign.location, style = MaterialTheme.typography.bodyMedium)
-                Text(campaign.description, style = MaterialTheme.typography.bodyLarge)
+                campaign.description?.let { Text(it, style = MaterialTheme.typography.bodyLarge) }
                 Button(onClick = onDonate, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.campaign_detail_donate))
                 }

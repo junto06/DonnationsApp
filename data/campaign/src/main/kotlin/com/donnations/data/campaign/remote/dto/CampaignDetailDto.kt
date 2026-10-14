@@ -11,6 +11,7 @@ data class CampaignDetailDto(
     @SerialName("description") val description: String,
     @SerialName("organizer") val organizer: String,
     @SerialName("location") val location: String,
+    @SerialName("categoryId") val categoryId: String,
     @SerialName("imageUrl") val imageUrl: String,
     @SerialName("currency") val currency: String,
     @SerialName("goal") val goal: String,

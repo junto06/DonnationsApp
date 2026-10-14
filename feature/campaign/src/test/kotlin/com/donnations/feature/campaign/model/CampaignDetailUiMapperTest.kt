@@ -24,6 +24,14 @@ class CampaignDetailUiMapperTest {
     }
 
     @Test
+    fun `hides a description and organizer the campaign doesn't have yet`() {
+        val ui = mapper().map(campaignDetail().copy(description = "", organizer = ""))
+
+        assertEquals(null, ui.description)
+        assertEquals(null, ui.organizer)
+    }
+
+    @Test
     fun `uses singular for one donor`() {
         assertEquals("1 donor", mapper().map(campaignDetail(donorCount = 1)).donorCount)
     }

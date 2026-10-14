@@ -1,6 +1,8 @@
 package com.donnations.feature.campaign
 
 import androidx.lifecycle.ViewModel
+import com.donnations.core.base.fold
+import com.donnations.core.base.mapContent
 import com.donnations.core.common.HasCoroutineExceptionHandler
 import com.donnations.core.common.viewModelReportingScope
 import com.donnations.core.model.CampaignId
@@ -14,10 +16,8 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
@@ -35,14 +35,23 @@ class CampaignDetailViewModel @AssistedInject constructor(
         fun create(campaignId: String): CampaignDetailViewModel
     }
 
+    private val id = CampaignId(campaignId)
     private val loadRequests = MutableStateFlow(0)
 
+    // Stored campaign first (also one stored by home), refreshed in the background;
+    // the error screen only appears when the refresh fails with nothing stored.
+    // The repository never throws and mapContent turns mapper failures into errors, so no catch.
     val uiState: StateFlow<CampaignDetailUiState> = loadRequests
         .flatMapLatest {
-            repository.getCampaign(CampaignId(campaignId))
-                .map<_, CampaignDetailUiState> { CampaignDetailUiState.Success(mapper.map(it)) }
-                .onStart { emit(CampaignDetailUiState.Loading) }
-                .catch { emit(CampaignDetailUiState.Error(R.string.campaign_detail_error_load)) }
+            repository.getCampaign(id)
+                .mapContent { mapper.map(it.value) }
+                .map { campaign ->
+                    campaign.fold(
+                        onLoading = { CampaignDetailUiState.Loading },
+                        onError = { CampaignDetailUiState.Error(R.string.campaign_detail_error_load) },
+                        onContent = { CampaignDetailUiState.Success(it) },
+                    )
+                }
         }
         .stateIn(
             viewModelReportingScope,
