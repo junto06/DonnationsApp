@@ -1,6 +1,7 @@
 package com.donnations
 
 import android.app.Application
+import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -12,10 +13,11 @@ import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @HiltAndroidApp
-class DonnationsApp : Application(), SingletonImageLoader.Factory {
+class DonnationsApp : Application(), SingletonImageLoader.Factory, Configuration.Provider {
 
     @Inject lateinit var okHttpClient: Lazy<OkHttpClient>
     @Inject lateinit var logger: Logger
+    @Inject lateinit var workConfiguration: Lazy<Configuration>
 
     override fun onCreate() {
         super.onCreate()
@@ -32,4 +34,8 @@ class DonnationsApp : Application(), SingletonImageLoader.Factory {
         ImageLoader.Builder(context)
             .components { add(OkHttpNetworkFetcherFactory(callFactory = { okHttpClient.get() })) }
             .build()
+
+    // WorkManager starts on first use with the Hilt worker factory (core:work:impl removes its startup initializer).
+    override val workManagerConfiguration: Configuration
+        get() = workConfiguration.get()
 }
