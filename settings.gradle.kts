@@ -31,6 +31,8 @@ include(":core:model")
 include(":core:designsystem")
 include(":core:network:base")
 include(":core:network:impl")
+include(":core:work:base")
+include(":core:work:impl")
 
 // Domain
 include(":domain:home")

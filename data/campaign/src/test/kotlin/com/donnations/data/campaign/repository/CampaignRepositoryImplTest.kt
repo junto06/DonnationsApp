@@ -2,8 +2,8 @@ package com.donnations.data.campaign.repository
 
 import com.donnations.core.base.RecordingLogger
 import com.donnations.core.model.CampaignId
-import com.donnations.data.campaign.remote.CampaignApi
-import com.donnations.data.campaign.remote.dto.CampaignDetailDto
+import com.donnations.data.campaign.remote.FakeCampaignApi
+import com.donnations.data.campaign.sync.FakeSyncScheduler
 import com.donnations.data.campaignstore.CampaignSummaryEntity
 import com.donnations.data.campaignstore.FakeCampaignDao
 import kotlinx.coroutines.flow.first
@@ -22,10 +22,11 @@ class CampaignRepositoryImplTest {
 
     private val now = Instant.parse("2026-10-12T09:30:00Z")
     private val id = CampaignId("c1")
-    private val api = FakeApi()
+    private val api = FakeCampaignApi()
     private val logger = RecordingLogger()
     private val dao = FakeCampaignDao()
-    private val repository = CampaignRepositoryImpl(api, dao, Clock.fixed(now, ZoneOffset.UTC), logger)
+    private val syncScheduler = FakeSyncScheduler()
+    private val repository = CampaignRepositoryImpl(api, dao, Clock.fixed(now, ZoneOffset.UTC), syncScheduler, logger)
 
     @Test
     fun `nothing is stored before the first refresh`() = runTest {
@@ -84,6 +85,33 @@ class CampaignRepositoryImplTest {
     }
 
     @Test
+    fun `an offline refresh schedules a background sync, also when a partial copy is stored`() = runTest {
+        dao.upsertSummaries(listOf(summary()))
+        api.failure = IOException("offline")
+
+        val settled = load()
+
+        assertEquals("Medical Support", settled.content!!.value.title)
+        assertEquals(listOf(id), syncScheduler.scheduled)
+    }
+
+    @Test
+    fun `a malformed response doesn't schedule a sync`() = runTest {
+        api.response = api.response.copy(raised = "not a number")
+
+        load()
+
+        assertEquals(emptyList<CampaignId>(), syncScheduler.scheduled)
+    }
+
+    @Test
+    fun `a successful refresh doesn't schedule a sync`() = runTest {
+        load()
+
+        assertEquals(emptyList<CampaignId>(), syncScheduler.scheduled)
+    }
+
+    @Test
     fun `does not report connectivity failures`() = runTest {
         api.failure = IOException("offline")
 
@@ -97,27 +125,6 @@ class CampaignRepositoryImplTest {
 
     // What's stored now; the fetch this triggers is harmless in these tests.
     private suspend fun stored() = load().content!!
-
-    private class FakeApi : CampaignApi {
-        var failure: Throwable? = null
-        var response = CampaignDetailDto(
-            id = "c1",
-            title = "Medical Support",
-            summary = "Mobile clinics",
-            description = "Doctors and medicines for flood-hit villages.",
-            organizer = "Care Clinics",
-            location = "Karachi, Pakistan",
-            categoryId = "health",
-            imageUrl = "https://example.com/a.jpg",
-            currency = "EUR",
-            goal = "20000.00",
-            raised = "12450.00",
-            donorCount = 530,
-            endsAt = "2026-12-15T12:00:00Z",
-        )
-
-        override suspend fun getCampaign(id: String): CampaignDetailDto = failure?.let { throw it } ?: response
-    }
 }
 
 private fun summary() = CampaignSummaryEntity(

@@ -32,6 +32,8 @@ dependencies {
 
     // Only the app sees network:impl; features compile against network:base
     implementation(projects.core.network.impl)
+    // Only the app sees work:impl (WorkManager setup); data modules compile against work:base
+    implementation(projects.core.work.impl)
     implementation(libs.coil)
     implementation(libs.coil.network.okhttp)
 
