@@ -13,3 +13,9 @@ donations:
     # A claimed donation is retried by another worker if not finished within the lease.
     lease: PT30S
     recovery-interval: PT10S
+  push:
+    fcm:
+      # When false (default), pushes are only logged.
+      enabled: false
+      # Firebase service-account JSON; required when enabled.
+      credentials-file: ""

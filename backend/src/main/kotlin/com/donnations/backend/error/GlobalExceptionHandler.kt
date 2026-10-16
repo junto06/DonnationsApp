@@ -5,6 +5,7 @@ import com.donnations.backend.domain.exception.CampaignNotFoundException
 import com.donnations.backend.domain.exception.DonationConflictException
 import com.donnations.backend.domain.exception.DonationNotFoundException
 import com.donnations.backend.domain.exception.ErrorCode
+import com.donnations.backend.domain.exception.InvalidDeviceTokenException
 import com.donnations.backend.domain.exception.InvalidDonationAmountException
 import com.donnations.backend.http.dto.ErrorResponseDto
 import org.slf4j.LoggerFactory
@@ -31,6 +32,10 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidDonationAmountException::class)
     fun handleInvalidDonationAmount(e: InvalidDonationAmountException): ResponseEntity<ErrorResponseDto> =
+        error(HttpStatus.BAD_REQUEST, e.message.orEmpty(), e.errorCode)
+
+    @ExceptionHandler(InvalidDeviceTokenException::class)
+    fun handleInvalidDeviceToken(e: InvalidDeviceTokenException): ResponseEntity<ErrorResponseDto> =
         error(HttpStatus.BAD_REQUEST, e.message.orEmpty(), e.errorCode)
 
     @ExceptionHandler(CampaignEndedException::class)

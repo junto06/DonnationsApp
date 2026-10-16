@@ -4,6 +4,7 @@ kotlin = "2.4.21"
 spring-boot = "4.1.1"
 spring-dependency-management = "1.1.7"
 springdoc = "3.1.1"
+firebase-admin = "9.11.0"
 
 # Library versions are managed by the Spring Boot BOM unless pinned.
 [libraries]
@@ -13,6 +14,7 @@ spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-bo
 springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
+firebase-admin = { module = "com.google.firebase:firebase-admin", version.ref = "firebase-admin" }
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 

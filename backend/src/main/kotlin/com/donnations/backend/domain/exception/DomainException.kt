@@ -14,6 +14,7 @@ enum class ErrorCode(val value: String) {
     CAMPAIGN_ENDED("1006"),
     DONATION_NOT_FOUND("1007"),
     DONATION_CONFLICT("1008"),
+    INVALID_DEVICE_TOKEN("1009"),
 }
 
 class CampaignNotFoundException :
@@ -30,3 +31,6 @@ class DonationNotFoundException :
 
 class DonationConflictException :
     DomainException("Donation id was already used for a different donation", errorCode = ErrorCode.DONATION_CONFLICT)
+
+class InvalidDeviceTokenException :
+    DomainException("Device token is invalid", errorCode = ErrorCode.INVALID_DEVICE_TOKEN)
