@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.springdoc.openapi.webmvc.ui)
     implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlin.reflect)
+    implementation(libs.firebase.admin)
 
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.kotlin.test.junit5)
